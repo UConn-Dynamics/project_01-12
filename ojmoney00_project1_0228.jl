@@ -38,7 +38,7 @@ begin
 	l = 0.15
 	w1 = 0.1
 	h = 0.2
-	omega = 20 # Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH
+	omega = 0 # Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH
 end
 
 # ╔═╡ cf2161df-4ae0-43ff-84d4-1d906856d3d4
@@ -53,8 +53,8 @@ end
 
 # ╔═╡ 7f9561cb-86e5-42fb-bc6f-a71ba1073d30
 begin
-	theta_0 = 0 # Initial angle
-	theta_dot_0 = 0 # Initial angle velocity
+	theta_0 = pi/2 # Initial angle RADIANS
+	theta_dot_0 = 0 # Initial angle velocity RADIANS
 	
 	u0 = [theta_0, theta_dot_0]
 end
