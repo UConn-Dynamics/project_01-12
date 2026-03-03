@@ -32,13 +32,79 @@ Your team's goal is to
 
 """
 
+# ╔═╡ 3c381910-006e-44cd-aec2-031ba8af67b6
+md"""# 1. Build the equations of motion using Lagrange and least action $L=T-V$
+
+Position of the Frame
+
+$x_f=w_1cos(ωt)$
+$y_f=w_1sin(ωt)$
+$z_f=h$
+
+
+Position of the Pendulum
+
+$x_p=Lsinθcos(ωt)$
+$y_p=Lsinθsin(ωt)$
+$z_p=-Lcosθ$
+
+
+
+Position of the Pendulum
+
+$x=x_f+x_p=(w_1+Lsinθ)cos(ωt)$
+$y=y_f+y_p=(w_1+Lsinθ)sin(ωt)$
+$z=z_f+z_p=h-Lcosθ$
+
+
+
+Velocity
+
+$v_x=-ω(w_1+Lsinθ)sin(ωt)+L(θ̇)cosθcos(ωt)$
+$v_y=ω(w_1+Lsinθ)cos(ωt)+L(θ̇)cosθsin(ωt)$
+$v_z=L(θ̇)sinθ$
+
+
+Kinetic Energy Equation
+
+$T = (1/2) m v^2$
+$T = (1/2) m (v_x^2+v_y^2+v_z^2)$
+$T = (1/2) m [ ω^2 (w1 + L sinθ)^2 + L^2 θ̇^2 ]$
+
+	
+
+Potential Energy Equation
+
+$V = m g z$
+$V = m g (h - Lcosθ)$
+
+
+
+Lagrange
+	
+$L = T - V$
+
+
+
+Equation of Motion
+
+TBD
+
+"""
+
+# ╔═╡ 47d441d1-f8d6-47bf-b41e-b23b39a4384e
+md"""# 2. Solve for the Motion for a Slow Rotation Speed and a Fast Rotation Speed
+
+"""
+
 # ╔═╡ 5a4f1548-cc0c-426f-9a0d-87c0c803b0ac
 begin
 	g = 9.81
 	l = 0.15
 	w1 = 0.1
 	h = 0.2
-	omega = 0 # Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH
+	m = 0.1
+	omega = 3 # Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH
 end
 
 # ╔═╡ cf2161df-4ae0-43ff-84d4-1d906856d3d4
@@ -53,7 +119,7 @@ end
 
 # ╔═╡ 7f9561cb-86e5-42fb-bc6f-a71ba1073d30
 begin
-	theta_0 = pi/2 # Initial angle RADIANS
+	theta_0 = pi/4 # Initial angle RADIANS
 	theta_dot_0 = 0 # Initial angle velocity RADIANS
 	
 	u0 = [theta_0, theta_dot_0]
@@ -65,8 +131,13 @@ time = (0, 10)
 # ╔═╡ 49b935f1-6277-403d-871d-1ff6e0415426
 begin
 	prob = ODEProblem(rotating_pendulum, u0, time)
-	sol = solve(prob, saveat=0.001)
+	sol = solve(prob, saveat=0.01)
 end
+
+# ╔═╡ bbb31f7c-cbd4-4885-a34f-35d4ab66f9f4
+md"""# 3. Visualize the Solution with Plots and Animations
+
+"""
 
 # ╔═╡ 28d8019f-9eac-4220-a2b2-9a3ed69369df
 begin
@@ -77,7 +148,7 @@ begin
 end
 
 # ╔═╡ 8b4a2945-2940-42be-a1b1-a31dd0c52d96
-## Now we can animate this ##
+md"""# Now we can animate this: #"""
 
 # ╔═╡ 5967a394-dae7-4ccd-9380-81c221c11355
 # Coordinates of where everything is in respect to time. NOTE: Y AND Z ARE FLIPPED
@@ -90,10 +161,13 @@ end
 # ╔═╡ 83e3126b-a20f-4645-a25c-5b4d1cc2e013
 anim = @animate for i in 1:5:length(sol.t)
 
+    current_time = sol.t[i]
+	
     plot(xlim=(-w1-l, w1+l),
          ylim=(-w1-l, w1+l),
          zlim=(-h, l+h),
-         legend=false)
+         legend=false,
+         title = "Time = $(round(current_time, digits=1)) s")
 
     plot!(x_vals[1:i],
           y_vals[1:i],
@@ -121,8 +195,8 @@ anim = @animate for i in 1:5:length(sol.t)
              markersize=5)
 end
 
-# ╔═╡ 5ef76a44-d9c1-4370-9d68-1a12cab4be6d
-gif(anim, "rotating_pendulum.gif", fps=30)
+# ╔═╡ 419b5676-42e6-4752-80a3-5ff587d63be9
+gif(anim, "rotating_pendulum.gif", fps=20)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2867,17 +2941,20 @@ version = "1.13.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╟─f17103ea-06bf-11f1-a2b0-79e68ed152eb
 # ╠═0d9be664-d7c5-4084-add2-25e5418742d6
+# ╟─f17103ea-06bf-11f1-a2b0-79e68ed152eb
+# ╟─3c381910-006e-44cd-aec2-031ba8af67b6
+# ╟─47d441d1-f8d6-47bf-b41e-b23b39a4384e
 # ╠═5a4f1548-cc0c-426f-9a0d-87c0c803b0ac
 # ╠═cf2161df-4ae0-43ff-84d4-1d906856d3d4
 # ╠═7f9561cb-86e5-42fb-bc6f-a71ba1073d30
 # ╠═1a0c1260-c8ac-4ce4-bcdd-a7b262874dbf
 # ╠═49b935f1-6277-403d-871d-1ff6e0415426
+# ╟─bbb31f7c-cbd4-4885-a34f-35d4ab66f9f4
 # ╠═28d8019f-9eac-4220-a2b2-9a3ed69369df
-# ╠═8b4a2945-2940-42be-a1b1-a31dd0c52d96
+# ╟─8b4a2945-2940-42be-a1b1-a31dd0c52d96
 # ╠═5967a394-dae7-4ccd-9380-81c221c11355
 # ╠═83e3126b-a20f-4645-a25c-5b4d1cc2e013
-# ╠═5ef76a44-d9c1-4370-9d68-1a12cab4be6d
+# ╠═419b5676-42e6-4752-80a3-5ff587d63be9
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
