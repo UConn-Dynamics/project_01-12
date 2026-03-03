@@ -272,6 +272,35 @@ end
 # ╔═╡ 419b5676-42e6-4752-80a3-5ff587d63be9
 gif(anim, "rotating_pendulum.gif", fps=30)
 
+# ╔═╡ 62ddf2cb-48c4-4dc2-ac0c-e9741c9952de
+begin
+    # Extract solution components
+    angle_values        = sol[1, :]           # θ(t)
+    angle_rate_values   = sol[2, :]           # θ̇(t)
+    time_values         = sol.t               # time grid
+
+    # Kinetic energy: T = 1/2 m [ ω² (w1 + L sinθ)² + L² θ̇² ]
+    kinetic_energy_values = 0.5 .* m .* (
+        omega^2 .* (w1 .+ l .* sin.(angle_values)).^2 .+
+        l^2 .* (angle_rate_values .^ 2)
+    )
+
+    # Potential energy: V = m g (h1 − L cosθ)
+    potential_energy_values = m .* g .* (h1 .- l .* cos.(angle_values))
+
+    # Action (here defined as Lagrangian): L = T − V
+    action_values = kinetic_energy_values .- potential_energy_values
+
+    # Plot action, kinetic, and potential energy vs time
+    plot(time_values, kinetic_energy_values,
+         label = "Kinetic Energy T(t)",
+         xlabel = "Time (s)",
+         ylabel = "Energy / Action",
+         title = "Action, Kinetic, and Potential vs Time")
+    plot!(time_values, potential_energy_values, label = "Potential Energy V(t)")
+    plot!(time_values, action_values, label = "Action L(t) = T - V", linewidth = 2)
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -288,7 +317,7 @@ Plots = "~1.41.6"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.12.4"
+julia_version = "1.12.1"
 manifest_format = "2.0"
 project_hash = "189dc913bc3840071b2ba33c7564509be1a17879"
 
@@ -853,7 +882,7 @@ version = "0.9.5"
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-version = "1.7.0"
+version = "1.6.0"
 
 [[deps.EnumX]]
 git-tree-sha1 = "7bebc8aad6ee6217c78c5ddcf7ed289d65d0263e"
@@ -1393,7 +1422,7 @@ version = "0.6.4"
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "OpenSSL_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.15.0+0"
+version = "8.11.1+1"
 
 [[deps.LibGit2]]
 deps = ["LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
@@ -1636,7 +1665,7 @@ version = "0.3.7"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2025.11.4"
+version = "2025.5.20"
 
 [[deps.MuladdMacro]]
 git-tree-sha1 = "cac9cc5499c25554cba55cd3c30543cff5ca4fab"
@@ -1781,7 +1810,7 @@ version = "1.6.1"
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
-version = "3.5.4+0"
+version = "3.5.1+0"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
@@ -2060,7 +2089,7 @@ version = "0.44.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "Random", "SHA", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.12.1"
+version = "1.12.0"
 weakdeps = ["REPL"]
 
     [deps.Pkg.extensions]
@@ -2991,9 +3020,9 @@ uuid = "1317d2d5-d96f-522e-a858-c73665f53c3e"
 version = "2022.0.0+1"
 
 [[deps.p7zip_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
+deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.7.0+0"
+version = "17.5.0+2"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -3033,5 +3062,6 @@ version = "1.13.0+0"
 # ╠═5967a394-dae7-4ccd-9380-81c221c11355
 # ╠═83e3126b-a20f-4645-a25c-5b4d1cc2e013
 # ╠═419b5676-42e6-4752-80a3-5ff587d63be9
+# ╠═62ddf2cb-48c4-4dc2-ac0c-e9741c9952de
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
