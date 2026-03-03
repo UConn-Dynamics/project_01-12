@@ -35,77 +35,129 @@ Your team's goal is to
 # ╔═╡ 3c381910-006e-44cd-aec2-031ba8af67b6
 md"""# 1. Build the equations of motion using Lagrange and least action $L=T-V$
 
-Position of the Frame
+a) Begin by finding the position vector of the pendulum mass. To to this, first find the position of the pendulum relative to the frame, and then find the position of the pendulum mass relative to the angle caused by spinning. Add the components of these poisition vectors together for the total position vector of the pendulum mass.
 
-$x_f=w_1cos(ωt)$
-$y_f=w_1sin(ωt)$
-$z_f=h$
+Position of the Pendulum Mass Relative to the Frame:
 
+$x_f=w_1cos{\theta}$
+$y_f=w_1sin{\theta}$
+$z_f=h_1$
+$\vec{r}_{f} = 
+\begin{bmatrix}
+w_1cos{\theta} \\
+w_1sin{\theta} \\
+h_1
+\end{bmatrix}$
 
-Position of the Pendulum
+Position of the Pendulum Mass Relative to the Angle caused by Spinning:
 
-$x_p=Lsinθcos(ωt)$
-$y_p=Lsinθsin(ωt)$
-$z_p=-Lcosθ$
-
-
-
-Position of the Pendulum
-
-$x=x_f+x_p=(w_1+Lsinθ)cos(ωt)$
-$y=y_f+y_p=(w_1+Lsinθ)sin(ωt)$
-$z=z_f+z_p=h-Lcosθ$
-
-
-
-Velocity
-
-$v_x=-ω(w_1+Lsinθ)sin(ωt)+L(θ̇)cosθcos(ωt)$
-$v_y=ω(w_1+Lsinθ)cos(ωt)+L(θ̇)cosθsin(ωt)$
-$v_z=L(θ̇)sinθ$
+$x_p=Lsin{\theta}cos({\omega}t)$
+$y_p=Lsin{\theta}sin({\omega}t)$
+$z_p=-Lcos{\theta}$
+$\vec{r}_{p} = 
+\begin{bmatrix}
+Lsin{\theta}cos({\omega}t) \\
+Lsin{\theta}sin({\omega}t) \\
+-Lcos{\theta}
+\end{bmatrix}$
 
 
-Kinetic Energy Equation
+Total Position of the Pendulum Mass:
 
-$T = (1/2) m v^2$
-$T = (1/2) m (v_x^2+v_y^2+v_z^2)$
-$T = (1/2) m [ ω^2 (w1 + L sinθ)^2 + L^2 θ̇^2 ]$
+$x(t)=x_f+x_p=(w_1+Lsin{\theta}(t))cos({\omega}t)$
+$y(t)=y_f+y_p=(w_1+Lsin{\theta}(t))sin({\omega}t)$
+$z(t)=z_f+z_p=h_1-Lcos{\theta}(t)$
+$\vec{r(t)} = 
+\begin{bmatrix}
+(w_1+Lsin{\theta}(t))cos({\omega}t) \\
+(w_1+Lsin{\theta}(t))sin({\omega}t) \\
+h_1-Lcos{\theta}(t)
+\end{bmatrix}$
 
-	
 
-Potential Energy Equation
+
+
+b) Using the total position vectors calculated above, determine the speed of the pendulum  mass (velocity vector). Velocity is the time derivative of the poisition vector and will be used to determine the kinetic energy equation.
+
+Velocity Vector  of Pendulum  Mass:
+
+$v_x(t)=-{\omega}(w_1+Lsin{\theta})sin({\omega}t)+L(\dot{\theta})cos{\theta}cos({\omega}t)$
+$v_y(t)={\omega}(w_1+Lsin{\theta})cos({\omega}t)+L(\dot{\theta})cos{\theta}sin({\omega}t)$
+$v_z(t)=L(\dot{\theta})sin{\theta}$
+$\vec{v(t)} = 
+\begin{bmatrix}
+-{\omega}(w_1+Lsin{\theta})sin({\omega}t)+L(\dot{\theta})cos{\theta}cos({\omega}t) \\
+{\omega}(w_1+Lsin{\theta})cos({\omega}t)+L(\dot{\theta})cos{\theta}sin({\omega}t) \\
+L(\dot{\theta})sin{\theta}
+\end{bmatrix}$
+
+
+
+c) The two variables of the Lagrange Equation are kinetic energy (T) and potential energy (V). Determine the equation of kinetic enegy and potential energy in order to determine the Lagrange equation.
+
+Kinetic Energy Equation:
+
+$T = \frac{1}{2} m v^2$
+$T = \frac{1}{2} m (v_x(t)^2+v_y(t)^2+v_z(t)^2)$
+$T = \frac{1}{2} m [ {\omega}^2 (w_1 + L \sin \theta (t))^2 + L^2 \dot{\theta}(t)^2]$
+
+
+
+Potential Energy Equation:
 
 $V = m g z$
-$V = m g (h - Lcosθ)$
+$V = m g (h_1 - Lcosθ(t))$
 
 
-
-Lagrange
+Lagrange Equation:
 	
 $L = T - V$
+$L = \frac{1}{2} m [ ω^2 (w_1 + L \sin \theta (t))^2 + L^2 \dot{\theta}(t)^2] - m g (h_1 - Lcos{\theta}(t))$
 
 
+d. WIP
+Equation of Motion:
 
-Equation of Motion
-
-TBD
 
 """
 
 # ╔═╡ 47d441d1-f8d6-47bf-b41e-b23b39a4384e
 md"""# 2. Solve for the Motion for a Slow Rotation Speed and a Fast Rotation Speed
 
+List the Given Variables of the Pendulum  Equation:
+
+$g = 9.81~\frac{m}{s^2}$
+$L = 0.15~m$
+$w_1 = 0.1~m$
+$h_1 = 0.2~m$
+$m = 0.1~kg$
+$ω = 0~rad/s #Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH$
 """
 
 # ╔═╡ 5a4f1548-cc0c-426f-9a0d-87c0c803b0ac
-begin
-	g = 9.81
-	l = 0.15
-	w1 = 0.1
-	h = 0.2
-	m = 0.1
-	omega = 0 # Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH
-end
+
+	begin
+		g = 9.81
+		l = 0.15
+		w1 = 0.1
+		h1 = 0.2
+		m = 0.1
+		omega = 0 # Constant speed rad/s. CHANGE THIS TO CHANGE GRAPH
+	end
+
+
+# ╔═╡ aeb3ae51-ac04-4187-b03c-fe44a43a45c3
+md"""# 
+
+Create Partial ODE's:
+
+$u_1={\theta}$
+$u_2=\dot{\theta}$
+
+
+$\dot{u_1}=\dot{\theta}$
+$\dot{u_2}=\frac{{\omega}^2}{L}(w_1 + Lsin{\theta}(t))cos{\theta} - \frac{g}{L}sin{\theta}(t)$
+"""
 
 # ╔═╡ cf2161df-4ae0-43ff-84d4-1d906856d3d4
 # Solved by derivation:
@@ -117,6 +169,21 @@ function rotating_pendulum(du, u, p, t)
 	du[2] = (omega^2 / l) * (w1 + l*sin(theta)) * cos(theta) - (g / l) * sin(theta)
 end
 
+# ╔═╡ a9246657-6b7b-42d8-8bc1-43fa81540295
+md"""# 
+
+Setup Initial Conditions:
+
+${\theta}_0=\frac{\pi}{2}$
+$\dot{\theta}_0=0$
+
+$u_0= 
+\begin{bmatrix} \frac{\pi}{2},
+0
+\end{bmatrix}$
+
+"""
+
 # ╔═╡ 7f9561cb-86e5-42fb-bc6f-a71ba1073d30
 begin
 	theta_0 = pi/2 # Initial angle RADIANS
@@ -124,6 +191,15 @@ begin
 	
 	u0 = [theta_0, theta_dot_0]
 end
+
+# ╔═╡ 14a00d6a-f1f1-462d-b80b-1cc4357b3f99
+md"""# 
+
+Create a Time Constraint for the Simulations/Animations:
+
+$time=10s$
+
+"""
 
 # ╔═╡ 1a0c1260-c8ac-4ce4-bcdd-a7b262874dbf
 time = (0, 10)
@@ -163,7 +239,7 @@ anim = @animate for i in 1:5:length(sol.t)
 
     plot(xlim=(-w1-l, w1+l),
          ylim=(-w1-l, w1+l),
-         zlim=(-h, l+h),
+         zlim=(-h1, l+h1),
          legend=false)
 
     plot!(x_vals[1:i],
@@ -173,7 +249,7 @@ anim = @animate for i in 1:5:length(sol.t)
 
 	plot!([0,0],
 		  [0,0],
-		  [-h,0])
+		  [-h1,0])
 	
     # Arm from center to pivot
     plot!([0, w1*cos(omega*sol.t[i])],
@@ -191,13 +267,6 @@ anim = @animate for i in 1:5:length(sol.t)
              [z_vals[i]],
              markersize=5)
 end
-
-
-
-
-	
-	
-
 
 
 # ╔═╡ 419b5676-42e6-4752-80a3-5ff587d63be9
@@ -2951,8 +3020,11 @@ version = "1.13.0+0"
 # ╠═3c381910-006e-44cd-aec2-031ba8af67b6
 # ╠═47d441d1-f8d6-47bf-b41e-b23b39a4384e
 # ╠═5a4f1548-cc0c-426f-9a0d-87c0c803b0ac
+# ╠═aeb3ae51-ac04-4187-b03c-fe44a43a45c3
 # ╠═cf2161df-4ae0-43ff-84d4-1d906856d3d4
+# ╠═a9246657-6b7b-42d8-8bc1-43fa81540295
 # ╠═7f9561cb-86e5-42fb-bc6f-a71ba1073d30
+# ╠═14a00d6a-f1f1-462d-b80b-1cc4357b3f99
 # ╠═1a0c1260-c8ac-4ce4-bcdd-a7b262874dbf
 # ╠═49b935f1-6277-403d-871d-1ff6e0415426
 # ╠═bbb31f7c-cbd4-4885-a34f-35d4ab66f9f4
