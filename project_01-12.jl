@@ -260,16 +260,42 @@ begin
 	plot(x_vals, z_vals,
 	    xlabel="x (m)",
 	    ylabel="z (m)",
-	    title="Pendulum Motion (Trajectory)",
+	    title="Rotating Frame Pendulum Motion (Trajectory)",
 	    linewidth=2,
 	    aspect_ratio=:equal)
 end
 
-# ╔═╡ 49058450-089d-4ed2-86ec-be86e883bee0
+# ╔═╡ 692e844c-86e6-4c5d-8b21-8e2f1dda94ce
 begin
-	plot(t,T,label="KE")
-	plot(t,V,label="PE")
-	plot(t,L,label="Action")
+	
+	function kinetic_energy(θ, ω)
+	    return 0.5*m*(L^2*ω^2 + (w1 + L*sin(θ))^2*ω^2)
+	end
+	
+	function potential_energy(θ)
+	    return m*g*(h1-L*cos(θ))
+	end
+	
+	
+	T_vals = [kinetic_energy(sol[1,i], sol[2,i]) for i in 1:length(sol.t)]
+	V_vals = [potential_energy(sol[1,i]) for i in 1:length(sol.t)]
+	L_vals = [T_vals[i] - V_vals[i] for i in 1:length(sol.t)]
+	
+	
+	plot(sol.t, T_vals,
+	    label="Kinetic Energy (T)",
+	    xlabel="Time (s)",
+	    ylabel="Energy (J)",
+	    linewidth=2)
+	
+	plot!(sol.t, V_vals,
+	    label="Potential Energy (V)",
+	    linewidth=2)
+	
+	plot!(sol.t, L_vals,
+	    label="Lagrangian (L = T - V)",
+	    linewidth=2,
+	    title="Rotating Frame Pendulum Energy vs Time")
 end
 
 # ╔═╡ 83e3126b-a20f-4645-a25c-5b4d1cc2e013
@@ -3071,7 +3097,8 @@ version = "1.13.0+0"
 # ╠═8b4a2945-2940-42be-a1b1-a31dd0c52d96
 # ╠═5967a394-dae7-4ccd-9380-81c221c11355
 # ╠═b2a11209-4a04-4558-b8f2-5fedb6aa8834
-# ╠═49058450-089d-4ed2-86ec-be86e883bee0
+# ╠═692e844c-86e6-4c5d-8b21-8e2f1dda94ce
 # ╠═83e3126b-a20f-4645-a25c-5b4d1cc2e013
 # ╠═419b5676-42e6-4752-80a3-5ff587d63be9
 # ╟─00000000-0000-0000-0000-000000000001
+# ╟─00000000-0000-0000-0000-000000000002
