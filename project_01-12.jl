@@ -35,6 +35,8 @@ Your team's goal is to
 # ╔═╡ 3c381910-006e-44cd-aec2-031ba8af67b6
 md"""# 1. Build the equations of motion using Lagrange and Least Action $L=T-V$
 
+The Principle of Least Action is a statement that describes the shortest path over the shortest amount of time. This is the path that balances kinetic and potential energy over time.
+
 a) Begin by finding the position vector of the pendulum mass. To to this, first find the position of the pendulum relative to the frame, and then find the position of the pendulum mass relative to the angle caused by spinning. Add the components of these poisition vectors together for the total position vector of the pendulum mass.
 
 Position of the Pendulum Mass Relative to the Frame:
@@ -116,15 +118,20 @@ $L = T - V$
 $L = \frac{1}{2} m [ {\omega}^2 (w_1 + L \sin \theta (t))^2 + L^2 \dot{\theta}(t)^2] - m g (h_1 - Lcos{\theta}(t))$
 
 
-d. 
+
+d) Taking the time integral of the Lagrange equation, we can define the Principle of Least Action. 'S' is the action. This integral then gives the Euler-Lagrange Equation, or final equation of motion.
+
+Principle of Least Action:
+
+$∫L(\theta, \dot{\theta}, t) dt$
+
+
 Equation of Motion:
 
 $\frac{d}{dt}\frac{dL}{\dot{\theta}}-\frac{dL}{d{\theta}}=0$
 $mL^2\ddot{\theta}-m{\omega}^2L(w_1+Lsin{\theta})cos{\theta}+mgLsin{\theta}=0$
 $L\ddot{\theta}-{\omega}^2(w_1+Lsin{\theta})cos{\theta}+gsin{\theta}=0$
 $\ddot{\theta}-\frac{{\omega}^2}{L}(w_1+Lsin{\theta})cos{\theta}+\frac{g}{L}sin{\theta}=0$
-
-e. The Principle of Least Action is a statement that describes the shortest path over the shortest amount of time. This is the path that balances kinetic and potential energy over time.
 
 """
 
@@ -222,34 +229,20 @@ md"""# 3. Visualize the Solution with Plots and Animations
 
 """
 
-# ╔═╡ 28d8019f-9eac-4220-a2b2-9a3ed69369df
-begin
-	plot(sol.t, sol[1,:],
-		xlabel = "Time (s)",
-		ylabel = "Theta (rad)",
-		title = "Angle vs Time of Rotating Frame Pendulum")
-end
-
-# ╔═╡ 34f155bb-ddab-437f-8650-d3a9e2a740db
-begin
-	plot(sol.t, sol[2,:],
-		xlabel = "Time (s)",
-		ylabel = "Omega (rad/s)",
-		title = "Anglular Speed vs Time of Rotating Frame Pendulum")
-end
-
-# ╔═╡ 8b4a2945-2940-42be-a1b1-a31dd0c52d96
-## Now we can animate this ##
-
-# ╔═╡ 5967a394-dae7-4ccd-9380-81c221c11355
+# ╔═╡ 4a5fcb2a-7891-4f34-8bbf-d62e4ca1421b
+# -------------------------
 # Coordinates of where everything is in respect to time. NOTE: Y AND Z ARE FLIPPED
+# -------------------------
 begin
 	x_vals = [(w1 + L*sin(sol[1,i])) * cos(omega*sol.t[i]) for i in 1:length(sol.t)]
 	y_vals = [(w1 + L*sin(sol[1,i])) * sin(omega*sol.t[i]) for i in 1:length(sol.t)]
 	z_vals = [-L*cos(sol[1,i]) for i in 1:length(sol.t)]
 end
 
-# ╔═╡ b2a11209-4a04-4558-b8f2-5fedb6aa8834
+# ╔═╡ cf1598cd-aecc-445d-8c0a-3aa403336ca5
+# -------------------------
+# PLOT PENDULUM (TRAJECTORY)
+# -------------------------
 begin
 	function position(θ)
 	    x = (w1 + L*sin(sol[1,i])) * cos(omega*sol.t[i])
@@ -265,9 +258,33 @@ begin
 	    aspect_ratio=:equal)
 end
 
+# ╔═╡ 28d8019f-9eac-4220-a2b2-9a3ed69369df
+# -------------------------
+# PLOT ANGLE  VS TIME
+# -------------------------
+begin
+	plot(sol.t, sol[1,:],
+		xlabel = "Time (s)",
+		ylabel = "Theta (rad)",
+		title = "Angle vs Time of Rotating Frame Pendulum")
+end
+
+# ╔═╡ 34f155bb-ddab-437f-8650-d3a9e2a740db
+# -------------------------
+# PLOT ANGULAR SPEED VS TIME
+# -------------------------
+begin
+	plot(sol.t, sol[2,:],
+		xlabel = "Time (s)",
+		ylabel = "Omega (rad/s)",
+		title = "Anglular Speed vs Time of Rotating Frame Pendulum")
+end
+
 # ╔═╡ 692e844c-86e6-4c5d-8b21-8e2f1dda94ce
 begin
-	
+# -------------------------
+# KINETIC ENERGY AND POTENTIAL ENERGY EQUATIONS
+# -------------------------
 	function kinetic_energy(θ, ω)
 	    return 0.5*m*(L^2*ω^2 + (w1 + L*sin(θ))^2*ω^2)
 	end
@@ -276,12 +293,16 @@ begin
 	    return m*g*(h1-L*cos(θ))
 	end
 	
-	
+# -------------------------
+# ENERGY AND LAGRANGE EQUATION W/TIME VARIABLE
+# -------------------------
 	T_vals = [kinetic_energy(sol[1,i], sol[2,i]) for i in 1:length(sol.t)]
 	V_vals = [potential_energy(sol[1,i]) for i in 1:length(sol.t)]
 	L_vals = [T_vals[i] - V_vals[i] for i in 1:length(sol.t)]
 	
-	
+# -------------------------
+# PLOT KINETIC ENERGY, POTENTIAL ENERGY, AND LAGRANE
+# -------------------------
 	plot(sol.t, T_vals,
 	    label="Kinetic Energy (T)",
 	    xlabel="Time (s)",
@@ -299,6 +320,10 @@ begin
 end
 
 # ╔═╡ 83e3126b-a20f-4645-a25c-5b4d1cc2e013
+## Now we can animate this ##
+# -------------------------
+# ANIMATION OF PENDULUM ROTATING IN FRAME
+# -------------------------
 anim = @animate for i in 1:5:length(sol.t)
 
     plot(xlim=(-w1-L, w1+L),
@@ -3092,11 +3117,10 @@ version = "1.13.0+0"
 # ╠═1a0c1260-c8ac-4ce4-bcdd-a7b262874dbf
 # ╠═49b935f1-6277-403d-871d-1ff6e0415426
 # ╠═bbb31f7c-cbd4-4885-a34f-35d4ab66f9f4
+# ╠═4a5fcb2a-7891-4f34-8bbf-d62e4ca1421b
+# ╠═cf1598cd-aecc-445d-8c0a-3aa403336ca5
 # ╠═28d8019f-9eac-4220-a2b2-9a3ed69369df
 # ╠═34f155bb-ddab-437f-8650-d3a9e2a740db
-# ╠═8b4a2945-2940-42be-a1b1-a31dd0c52d96
-# ╠═5967a394-dae7-4ccd-9380-81c221c11355
-# ╠═b2a11209-4a04-4558-b8f2-5fedb6aa8834
 # ╠═692e844c-86e6-4c5d-8b21-8e2f1dda94ce
 # ╠═83e3126b-a20f-4645-a25c-5b4d1cc2e013
 # ╠═419b5676-42e6-4752-80a3-5ff587d63be9
