@@ -4,10 +4,12 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 0d9be664-d7c5-4084-add2-25e5418742d6
-using Symbolics, ModelingToolkit, DifferentialEquations, Plots, Latexify
+# ╔═╡ ef4119ee-32c1-4ea3-990b-c459d5ca9870
+# libraries
+using Symbolics, Plots, DifferentialEquations, Latexify, OrdinaryDiffEq
 
-# ╔═╡ f17103ea-06bf-11f1-a2b0-79e68ed152eb
+# ╔═╡ 28aa1bc2-c49b-4461-a722-a5c8a1178869
+# problem statement
 md"""# Project_01 - Spinning Pendulum and the Lagrange equations
 
 In this project, a pendulum is attached to a spinning frame. The frame has dimensions, 
@@ -28,300 +30,293 @@ Your team's goal is to
 
 """
 
-# ╔═╡ e60241b5-d35a-495a-ae92-edb846c41bb8
-md"""# Things To Add
-
-Hey Everyone! 
-
-I've added in the basic equations going through the coordinate system definition and lagrangian definition up to a 3d animation of the pendulum. 
-
-Please feel free to add on whatever you think would be nice, whether it would be more explainations for certain sections, or possibly adding dampeners.
-
-For now, if you don't have any ideas what to do, try adding a dampener to the equation and rederive the lagrange expression, or then you can animate it in 3d the same way the basic one was. You can also plot more variables or try to mess with initial conditions to see how the system responds.
-
-"""
-
-# ╔═╡ 91003e71-8208-43d3-93be-dd2c141c37b5
-md"""# Defining Generalized Coordinate System
-
-We will start by defining our coordinate system. We can first do this by determining our Greubler Count. Since this system is 1 body, $N=1$ and thus our Greubler Count is $DOF=3-C$. Since our pendulum has a constant string length of $L$ and must lie in the $x'-y'$ plane, $C=2$ and we have 1 DOF, $\theta(t)$.
-
-The angle $\theta(t)$ is relative to the vertical in the rotating frame (i.e. the angle in a traditional pendulum problem)
-
-The angle $\phi(t)$ is the angle at which the pendulum's $x'-z'$ plane is rotated from the positive $x$-axis. Since it is rotating at a constant speed, this angle $\phi$ is not a DOF and $\phi(t) = \Omega t$.
-
-"""
-
-# ╔═╡ 910c7d40-5d28-448e-aaf7-486bb000f478
-# definining variables and basic equations.
-begin
-	@parameters L h1 w1 m g Ω
-	@independent_variables t
-	@variables θ(t)
-	D = Differential(t)
-	θ_dot = D(θ)
-	θ_dot_dot = D(D(θ))
-	φ = Ω * t
-end
-
-# ╔═╡ e28f72c0-7df2-4029-ab2a-4f21f2bade62
+# ╔═╡ b31e35d1-6244-4ebd-96c2-f3793e592650
 md"""
-Relative to the top of the frame in the $x'-y'$ plane, the position of the bob is:
+## SECTION 1 — Generalized Coordinates and Lagrangian
 
-$\vec{r}_{x'-z'} = \begin{bmatrix} L\sin(\theta) \\ -L\cos(\theta)\end{bmatrix}$
+We model a pendulum of length $L$ and mass $m$ attached to a frame rotating at a constant angular speed $\omega_1$. The pendulum motion is described using two generalized coordinates: $\theta(t)$ for the polar angle and $\phi(t)$ for the azimuthal angle.
 
-Translating the $x'$ coordinate into $(x, y)$ we get the following position in our generalized coordinates:
+The time derivatives are defined as $\dot{\theta}(t) = \frac{d\theta}{dt}$ and $\dot{\phi}(t) = \frac{d\phi}{dt}$.
 
-$\vec{r}_{rot} = \begin{bmatrix} L\sin(\theta)\cos(\phi) \\ L\sin(\theta)\sin(\phi) \\ -L\cos(\theta)\end{bmatrix}$
+### Kinetic Energy
+The kinetic energy has two contributions: 
+
+swinging motion $T_\theta = \frac{1}{2} m L^2 \dot{\theta}^2$ 
+
+and rotational motion $T_\phi = \frac{1}{2} m L^2 \sin^2\theta \, (\dot{\phi} + \omega_1)^2$. 
+
+The total kinetic energy is $T = \frac{1}{2} m L^2 \dot{\theta}^2 + \frac{1}{2} m L^2 \sin^2\theta \, (\dot{\phi} + \omega_1)^2$.
+
+### Potential Energy
+The gravitational potential energy is $V = m g L (1 - \cos\theta)$.
+
+### Lagrangian
+The Lagrangian is defined as $\mathcal{L} = T - V$, which will be used in Section 2 to compute the Euler–Lagrange equations.
 """
 
-# ╔═╡ cbd246ac-cbc8-4301-b224-87e92f7912b5
-r_rot = [L*sin(θ)*cos(φ), L*sin(θ)*sin(φ), -L*cos(θ)]
 
-# ╔═╡ 89408ad5-0f4f-4bf9-bfaf-5ef3fdf1791d
+# ╔═╡ eacadd1d-de8c-4c1b-81c1-711feb891e6a
+# SECTION 1
+begin
+    @variables t m L g ω1
+    @variables θ(t), φ(t)
+    D = Differential(t)
+
+    θdot = D(θ)
+    φdot = D(φ)
+
+    # Kinetic energy in rotating frame
+    T = (1//2) * m * L^2 * θdot^2 +
+        (1//2) * m * L^2 * sin(θ)^2 * (φdot + ω1)^2
+
+    # Potential energy
+    V = m * g * L * (1 - cos(θ))
+
+    # Lagrangian
+    Lag = T - V
+end
+
+# ╔═╡ b0d6933b-a5ca-4b0e-8df4-31c56655ef3d
 md"""
-The position of the top of the frame is:
+## SECTION 2 — Euler–Lagrange Equations
 
-$\vec{r}_{x'-z'} = \begin{bmatrix} w_1 \\ h_1 \end{bmatrix}$
-
-Translating the $x'$ coordinate into $(x, y)$ we get the following generalized coordinate:
-
-$\vec{r}_{0} = \begin{bmatrix} w_1\cos(\phi) \\ w_1\sin(\phi) \\ h_1 \end{bmatrix}$
+This section computes the Euler–Lagrange equations for the generalized coordinates $\theta(t)$ and $\phi(t)$. The equations are obtained from $\frac{d}{dt}\left(\frac{\partial \mathcal{L}}{\partial \dot{q}}\right) - \frac{\partial \mathcal{L}}{\partial q} = 0$ for each coordinate $q \in \{\theta, \phi\}$. These expressions describe how the pendulum evolves under gravity, rotation, and geometric coupling between $\theta$ and $\phi$.
 """
 
-# ╔═╡ 342f30ae-5a57-4330-8a18-8a9b1eabd74f
-r_0 = [w1*cos(φ), w1*sin(φ), h1]
 
-# ╔═╡ d8d43e4b-a976-4535-a3f0-c2230fd55631
+# ╔═╡ da263111-4d1d-431b-884c-a17c4d6fff56
+# SECTION 2
+begin
+    dL_dθdot = Symbolics.derivative(Lag, D(θ))
+    dL_dφdot = Symbolics.derivative(Lag, D(φ))
+
+    dL_dθ = Symbolics.derivative(Lag, θ)
+    dL_dφ = Symbolics.derivative(Lag, φ)
+
+    EL_θ = expand_derivatives(D(dL_dθdot) - dL_dθ)
+    EL_φ = expand_derivatives(D(dL_dφdot) - dL_dφ)
+end
+
+
+# ╔═╡ 6c0604ef-6b8a-49bc-92f4-61ed1cd34dc1
 md"""
-So, the total generalized position vector is then:
+## SECTION 3 — Solving for $\ddot{\theta}$ and $\ddot{\phi}$
 
-$\vec{r} = \vec{r}_{rot}+\vec{r}_0$
-
-$\vec{r} = \begin{bmatrix} w_1\cos(\phi) + L\sin(\theta)\cos(\phi) \\ w_1\sin(\phi) + L\sin(\theta)\sin(\phi) \\ h_1 -L\cos(\theta) \end{bmatrix}$
-
+This section solves the Euler–Lagrange equations for the second derivatives $\ddot{\theta}$ and $\ddot{\phi}$. The results give explicit expressions for the angular accelerations as functions of $\theta$, $\phi$, $\dot{\theta}$, $\dot{\phi}$, $g$, $L$, and $\omega_1$. These expressions form the nonlinear equations of motion used for numerical simulation.
 """
 
-# ╔═╡ 21a2c22e-99a7-46b5-b898-22028948e114
-r = r_rot .+ r_0
 
-# ╔═╡ 2c97d2eb-070c-499f-8bbc-9f650953ccd1
+# ╔═╡ 7d1874b1-0155-4d42-81b9-679a306ba5dc
+# SECTION 3
+begin
+    # Solve for θ̈ and φ̈
+    sol_dd = solve_for([EL_θ, EL_φ], [D(D(θ)), D(D(φ))])
+
+    # Extract solutions by index (safe and reliable)
+    θdd_expr = simplify(sol_dd[1])
+    φdd_expr = simplify(sol_dd[2])
+
+    # Optional: print clean forms
+    # println(latexify(θdd_expr))
+    # println(latexify(φdd_expr))
+end
+
+# ╔═╡ 37cdba37-88be-4f7e-b7eb-68a510b70f7e
 md"""
-We now compute the Lagrangian $L = T-V$. 
+## SECTION 4 — Building the Numerical ODE System
 
-Where $T = \frac{1}{2}m |\vec{\dot{r}}|^2$ and $V = mgh$
-
-For V we choose the plane $z=0$ as our reference point, so that we can use our $z$ coordinate for h.
+This section converts the symbolic expressions for $\ddot{\theta}$ and $\ddot{\phi}$ into a numerical function using `build_function`. The resulting ODE system uses the state vector $u = [\theta, \phi, \dot{\theta}, \dot{\phi}]$ and computes its time derivative $\dot{u}$. This prepares the system for numerical integration using DifferentialEquations.jl.
 """
 
-# ╔═╡ 61500b9e-061e-4412-9fa7-9931ad27bee4
-# defining lagrangian stuff
+
+# ╔═╡ 283ca636-4a53-47df-972d-ceb569ae24e1
+# SECTION 4
 begin
-	h = r[3]
-	v = D.(r)
-	T = m/2*sum(v .* v)
-	V = m*g*h
-	Lag = expand_derivatives(T - V)
+    θφ_dd_tuple = build_function(
+        [θdd_expr, φdd_expr],
+        θ, φ, D(θ), D(φ), g, L, ω1;
+        expression = Val(false)
+    )
+
+    θφ_dd = θφ_dd_tuple[1]
+
+    function pendulum_rotating!(du, u, p, t)
+        θv, φv, θdv, φdv = u
+        g_p, L_p, ω1_p = p
+
+        du[1] = θdv
+        du[2] = φdv
+
+        θdd_val, φdd_val = θφ_dd(θv, φv, θdv, φdv, g_p, L_p, ω1_p)
+
+        du[3] = θdd_val
+        du[4] = φdd_val
+    end
 end
 
-# ╔═╡ 107838fd-dc24-4b35-bc0f-531cfc6362f2
-md"""Now with our Lagrangian, we can find the path of least action using the Euler-Lagrange equation:
-
-$\frac{d}{dt}\left( \frac{d L}{d \dot{\theta}} \right) - \frac{d L}{d \theta}= 0$
-
-"""
-
-# ╔═╡ 242302eb-fe7e-4c20-83a2-f5a976fbbac9
-# performing euler-lagrange equation stuff
-begin
-	dL_dθ = Symbolics.derivative(Lag, θ)
-	dL_dθ_dot = Symbolics.derivative(Lag, θ_dot)
-	el_eq = expand_derivatives(D(dL_dθ_dot) - dL_dθ)
-	sol = simplify(solve_for(el_eq ~ 0, θ_dot_dot))
-end
-
-# ╔═╡ 93902fe2-5fcd-4f16-8384-9768002d9ee1
+# ╔═╡ 7c8d402a-379e-4c25-bfd2-4db652b48def
 md"""
-To solve this 2nd order ODE, we deconstruct it into a system of 2 1st order ODEs, defining it as an ODESystem object.
+## SECTION 5 — Solving the Equations of Motion
+
+This section defines the physical parameters $g$, $L$, and $\omega_1$, sets initial conditions, and solves the ODE system for two cases: a slow rotation speed $\omega_1 = 0.2$ and a fast rotation speed $\omega_1 = 2.0$. The slow solution is stored as `sol_anim` for use in the animation sections.
 """
 
-# ╔═╡ 28406b28-a701-4b46-8620-5df4a5dc70ae
-# setting up numerical equation for ODE solving
+
+# ╔═╡ 7d46d7f6-d2ad-4302-9c94-277287413e16
+# SECTION 5
 begin
-	@variables θ_s(t) ω_s(t)
-	rhs_expr = substitute(sol, Dict(θ => θ_s, θ_dot => ω_s))
-	eqs = [
-		D(θ_s) ~ ω_s,
-		D(ω_s) ~ rhs_expr
-	]
-	@named sys = ODESystem(eqs, t, [θ_s, ω_s], [L, g, Ω, m, w1, h1])
-	sys = structural_simplify(sys)
+    # Physical parameters
+    g_param = 9.81
+    L_param = 0.15
+    ω1_slow = 0.2
+    ω1_fast = 2.0
+
+    # Initial conditions
+    θ0 = 30*pi/180
+    φ0 = 0.0
+    θd0 = 0.0
+    φd0 = 0.0
+    u0 = [θ0, φ0, θd0, φd0]
+
+    # Time span (must be defined here so Section 6 can use it)
+    tspan = (0.0, 10.0)
+
+    # Parameter sets
+    p_slow = (g_param, L_param, ω1_slow)
+    p_fast = (g_param, L_param, ω1_fast)
+
+    # Solve slow rotation
+    prob_slow = ODEProblem(pendulum_rotating!, u0, tspan, p_slow)
+    sol_slow = solve(prob_slow, Tsit5(), reltol=1e-6)
+
+    # Solve fast rotation
+    prob_fast = ODEProblem(pendulum_rotating!, u0, tspan, p_fast)
+    sol_fast = solve(prob_fast, Tsit5(), reltol=1e-6)
+
+    # IMPORTANT:
+    # These two variables MUST exist for Section 6 and 7
+    sol_anim = sol_slow
+    p_anim = p_slow
+	#sol_anim = sol_fast
+    #p_anim = p_fast
+	sol = sol_anim
 end
 
-# ╔═╡ 44d9e415-a7ac-431c-a72e-0d4392b2e629
-# compute ODE using specified variables
-function simulate_pendulum(sys; L_val=0.15, g_val=9.8, Ω_val=0.5, m_val=0.1, w1_val=0.1, h1_val=0.2, θ_0=0.5, θ_dot_0=0.0, tspan=(0.0,10.0))
-	
-	u0 = Dict(θ_s => θ_0, ω_s => θ_dot_0)
+# ╔═╡ b9699d8b-f315-443e-a4da-d3440df472c5
+md"""
+## SECTION 6 — 2D Animation of the Pendulum Motion
 
-	p = Dict(L => L_val, g => g_val, Ω => Ω_val, m => m_val, w1 => w1_val, h1 => h1_val)
+This section creates a 2D animation showing the time evolution of $\theta(t)$, $\dot{\theta}(t)$, and the pendulum bob position in the $x'$–$z'$ plane. The bob coordinates are computed from $x = L \sin\theta$ and $y = -L \cos\theta$. This visualization illustrates how the pendulum swings while the frame rotates.
+"""
 
-	prob = ODEProblem(sys, merge(u0, p), tspan)
 
-	sol = solve(prob, Tsit5(); reltol=1e-6, abstol=1e-8, saveat=0.0333)
-
-	return sol, p
-end
-
-# ╔═╡ 8776d0cc-f9fb-43ee-babe-b77ec4f189ce
-# 3 cases, no rotation, slow rotation, fast rotation
+# ╔═╡ a5234f9a-ab19-44e4-a2d6-170f96c68b7d
+# SECTION 6
 begin
-	sol_no, p_no = simulate_pendulum(sys; Ω_val=0.0)
-   	sol_slow, p_slow = simulate_pendulum(sys; Ω_val=0.5)
-    sol_fast, p_fast = simulate_pendulum(sys; Ω_val=8.0)
+    g_anim2, L_anim2, ω1_anim2 = p_anim
+    nframes2 = 150
+    tvals2 = range(tspan[1], tspan[2], length=nframes2)
+
+    @gif for tval2 in tvals2
+        state2 = sol_anim(tval2)
+        θ_now2 = state2[1]
+        θd_now2 = state2[3]
+
+        angle_plot2 = plot(sol_anim.t, sol_anim[1,:],
+            xlabel="time (s)", ylabel="θ (rad)",
+            title="Angle vs Time", legend=false)
+        scatter!(angle_plot2, [tval2], [θ_now2])
+
+        speed_plot2 = plot(sol_anim.t, sol_anim[3,:],
+            xlabel="time (s)", ylabel="θ̇ (rad/s)",
+            title="Angular Speed vs Time", legend=false)
+        scatter!(speed_plot2, [tval2], [θd_now2])
+
+        x2 = L_anim2 * sin(θ_now2)
+        y2 = -L_anim2 * cos(θ_now2)
+
+        pend_plot2 = plot(
+            xlim=(-1.2L_anim2, 1.2L_anim2),
+            ylim=(-1.2L_anim2, 0.2L_anim2),
+            aspect_ratio=:equal,
+            xlabel="x (m)", ylabel="y (m)",
+            title="Pendulum Motion", legend=false
+        )
+        plot!(pend_plot2, [0, x2], [0, y2], lw=3)
+        scatter!(pend_plot2, [x2], [y2], ms=8)
+
+        plot(angle_plot2, speed_plot2, pend_plot2,
+            layout=@layout([a; b; c]), size=(700,900))
+    end every 2
 end
 
-# ╔═╡ 1a7f4f86-3dc5-4bd3-a25a-4a8f6a96e14e
+
+# ╔═╡ ae810478-960e-4a42-b34b-ed5b4dd37fca
+md"""
+## SECTION 7 — 3D Animation of the Rotating-Frame Pendulum
+
+This section generates a 3D animation of the pendulum motion using the spherical-to-Cartesian relations $x = L \sin\theta \cos\phi$, $y = L \sin\theta \sin\phi$, and $z = -L \cos\theta$. This visualization shows both the swinging motion in $\theta$ and the precession in $\phi$ caused by the rotating frame.
+"""
+
+
+# ╔═╡ a9bd8c9c-e3b5-429c-b369-05c6c470e227
+# SECTION 7
 begin
-	plot_no = Plots.plot(sol_no, idxs=[θ_s], xlabel="t (sec)", ylabel="θ (rad)", title="Angle vs Time Without Rotation")
-	plot_slow = Plots.plot(sol_slow, idxs=[θ_s], xlabel="t (sec)", ylabel="θ (rad)", title="Angle vs Time With Slow Rotation")
-	plot_fast = Plots.plot(sol_fast, idxs=[θ_s], xlabel="t (sec)", ylabel="θ (rad)", title="Angle vs Time With Fast Rotation")
-	plot(plot_no, plot_slow, plot_fast; layout=(1,3), size=(1200, 300))
+    g_anim, L_anim, ω1_anim = p_anim
+    nframes = 150
+    tvals = range(tspan[1], tspan[2], length=nframes)
+
+    @gif for tval in tvals
+        θ_now = sol(tval)[1]
+        φ_now = sol(tval)[2]
+        θd_now = sol(tval)[3]
+
+        x = L_anim * sin(θ_now) * cos(φ_now)
+        y = L_anim * sin(θ_now) * sin(φ_now)
+        z = -L_anim * cos(θ_now)
+
+        angle_plot = plot(sol.t, sol[1,:],
+            xlabel="time (s)", ylabel="θ (rad)",
+            title="Angle θ vs Time", legend=false)
+        scatter!(angle_plot, [tval], [θ_now])
+
+        speed_plot = plot(sol.t, sol[3,:],
+            xlabel="time (s)", ylabel="θ̇ (rad/s)",
+            title="Angular Speed θ̇ vs Time", legend=false)
+        scatter!(speed_plot, [tval], [θd_now])
+
+        pend_plot = plot(
+            xlims=(-1.2L_anim, 1.2L_anim),
+            ylims=(-1.2L_anim, 1.2L_anim),
+            zlims=(-1.2L_anim, 0.2L_anim),
+            aspect_ratio=:equal,
+            xlabel="x (m)", ylabel="y (m)", zlabel="z (m)",
+            title="Pendulum Motion (3D)", legend=false
+        )
+        plot!(pend_plot, [0, x], [0, y], [0, z], lw=3)
+        scatter!(pend_plot, [x], [y], [z], ms=8)
+
+        plot(angle_plot, speed_plot, pend_plot,
+            layout=@layout([a; b; c]), size=(700,900))
+    end every 2
 end
 
-# ╔═╡ 1e0bd7c3-ec63-452e-9849-1f9579017f9c
-begin
-	plot_ω_no = Plots.plot(sol_no, idxs=[ω_s], xlabel="t (sec)", ylabel="ω (rad/sec)", title="Angular Velocity vs Time Without Rotation")
-	plot_ω_slow = Plots.plot(sol_slow, idxs=[ω_s], xlabel="t (sec)", ylabel="ω (rad/sec)", title="Angular Velocity vs Time With Slow Rotation")
-	plot_ω_fast = Plots.plot(sol_fast, idxs=[ω_s], xlabel="t (sec)", ylabel="ω (rad/sec)", title="Angular Velocity vs Time With Fast Rotation")
-	plot(plot_ω_no, plot_ω_slow, plot_ω_fast; layout=(1,3), size=(1200, 300))
-end
-
-# ╔═╡ 0ae7e576-5c31-4ec7-bd4e-6df4b41c7c4f
-function compute_pendulum_geometry(sol, p)
-	θ_vals = sol[θ_s]
-	t_vals = sol.t
-	Ω_val = p[Ω]
-	L_val = p[L]
-	w_val = p[w1]
-	h_val = p[h1]
-	φ_vals = Ω_val .* t_vals
-	
-	r_x = L_val .* sin.(θ_vals) .*  cos.(φ_vals)  .+ w_val .* cos.(φ_vals)
-	r_y = L_val .*  sin.(θ_vals)  .* sin.(φ_vals) .+ w_val .* sin.(φ_vals)
-	r_z = -L_val .* cos.(θ_vals) .+ h_val
-
-
-	frame_top_x_values = w_val .* cos.(φ_vals)
-	frame_top_y_values = w_val .* sin.(φ_vals)
-	frame_top_z_values = fill(h_val, length(t_vals))
-
-	max_radius = L_val + w_val
-
-	return (; t_vals, r_x, r_y, r_z, frame_top_x_values, frame_top_y_values, frame_top_z_values, max_radius, h_val, L_val)
-end
-
-# ╔═╡ fcd29939-01e8-42ae-8fef-f70ca60eebef
-function animate_pendulum_3d(solution, parameters; title = "3D Pendulum on Rotating Frame", filename = "pendulum_3d.gif", fps=30)
-	geometry = compute_pendulum_geometry(solution, parameters)
-
-	pendulum_animation = @animate for index in eachindex(geometry.t_vals)
-	    # Static vertical frame: from (0,0,0) up to (0,0,h1)
-	    vertical_x = [0.0, 0.0]
-	    vertical_y = [0.0, 0.0]
-	    vertical_z = [0.0, geometry.h_val]
-	
-	    # Rotating horizontal arm: from top of frame to moving pivot
-	    arm_x = [0.0, geometry.frame_top_x_values[index]]
-	    arm_y = [0.0, geometry.frame_top_y_values[index]]
-	    arm_z = [geometry.h_val, geometry.frame_top_z_values[index]]
-	
-	    # Pendulum rod: from moving pivot to bob
-	    rod_x = [geometry.frame_top_x_values[index], geometry.r_x[index]]
-	    rod_y = [geometry.frame_top_y_values[index], geometry.r_y[index]]
-	    rod_z = [geometry.frame_top_z_values[index], geometry.r_z[index]]
-
-		
-		# trail_length = 200  # fixed number of recent points
-
-		# start_index = max(1, index - trail_length)
-		
-		trace_x = @view geometry.r_x[1:index]
-		trace_y = @view geometry.r_y[1:index]
-		trace_z = @view geometry.r_z[1:index]
-		
-		plot3d(
-			trace_x, trace_y, trace_z;
-			label      = "Trace",
-			linestyle  = :dot,
-			linecolor  = :blue,
-			linewidth  = 2,
-			xlim       = (-geometry.max_radius, geometry.max_radius),
-			ylim       = (-geometry.max_radius, geometry.max_radius),
-			zlim       = (0.0, geometry.h_val + geometry.L_val + 0.1),
-			aspect_ratio = :equal,
-			xlabel     = "x",
-			ylabel     = "y",
-			zlabel     = "z",
-			title      = title * " (t = $(round(geometry.t_vals[index]; digits = 2)) s)",
-		)
-
-	
-	    plot3d!(
-	        rod_x, rod_y, rod_z,
-			label     = "Pendulum Rod",
-	        linecolor = :green,
-	        linewidth = 3,
-	    )
-
-		scatter3d!([geometry.r_x[index]], [geometry.r_y[index]], [geometry.r_z[index]],
-	        label       = "Bob",
-	        markercolor = :red,
-	        markersize  = 6,
-	    )
-	
-	    plot3d!(vertical_x, vertical_y, vertical_z,
-	        label        = "Frame",
-	        linecolor    = :black,
-	        linewidth    = 3,
-	    )
-	
-	    plot3d!(arm_x, arm_y, arm_z,
-			label     = "Rotating Arm",
-			linecolor = :black,
-			linewidth = 3,
-	    )
-	
-	    
-	end
-
-	gif(pendulum_animation, filename, fps=30)
-end
-
-# ╔═╡ 9c67720a-bb46-4b57-9a88-898147c0f77e
-animate_pendulum_3d(sol_no, p_no; title="3D Pendulum Without Rotation")
-
-# ╔═╡ 4bf427a3-a066-4abd-8be0-623e9d0aadf8
-animate_pendulum_3d(sol_slow, p_slow; title="3D Pendulum With Slow Rotation")
-
-# ╔═╡ 7f52e3e0-5691-4093-a9dc-af84bdd368fc
-animate_pendulum_3d(sol_fast, p_fast; title="3D Pendulum With Fast Rotation")
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-ModelingToolkit = "961ee093-0014-501f-94e3-6117800e7a78"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 
 [compat]
 DifferentialEquations = "~7.17.0"
 Latexify = "~0.16.10"
-ModelingToolkit = "~11.7.2"
-Plots = "~1.41.4"
-Symbolics = "~7.8.0"
+OrdinaryDiffEq = "~6.108.0"
+Plots = "~1.41.5"
+Symbolics = "~7.14.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -330,7 +325,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.4"
 manifest_format = "2.0"
-project_hash = "519c4d981c804d986924ec2e52cddd4be394ac21"
+project_hash = "513630999700fd3de9391e0a67bef7cd620144ad"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "f7304359109c768cf32dc5fa2d371565bb63b68a"
@@ -482,16 +477,6 @@ git-tree-sha1 = "a2d308fcd4c2fb90e943cf9cd2fbfa9c32b69733"
 uuid = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 version = "0.2.2"
 
-[[deps.BipartiteGraphs]]
-deps = ["DataStructures", "DocStringExtensions", "Graphs", "PrecompileTools"]
-git-tree-sha1 = "ee0e3837bfd10d5f00b1b63539496a4130aa416d"
-uuid = "caf10ac8-0290-4205-88aa-f15908547e8d"
-version = "0.1.6"
-weakdeps = ["SparseArrays"]
-
-    [deps.BipartiteGraphs.extensions]
-    BipartiteGraphsSparseArraysExt = "SparseArrays"
-
 [[deps.BitFlags]]
 git-tree-sha1 = "0691e34b3bb8be9307330f88d1a3c3f25466c24d"
 uuid = "d1d4a3ce-64b1-5f1a-9ba4-7e7e69966f35"
@@ -502,17 +487,6 @@ deps = ["Static"]
 git-tree-sha1 = "f21cfd4950cb9f0587d5067e69405ad2acd27b87"
 uuid = "62783981-4cbd-42fc-bca8-16325de8dc4b"
 version = "0.1.6"
-
-[[deps.BlockArrays]]
-deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "0f606a9894e2bcda541ceb82a91a13c5d450ed97"
-uuid = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
-version = "1.9.3"
-weakdeps = ["Adapt", "BandedMatrices"]
-
-    [deps.BlockArrays.extensions]
-    BlockArraysAdaptExt = "Adapt"
-    BlockArraysBandedMatricesExt = "BandedMatrices"
 
 [[deps.BoundaryValueDiffEq]]
 deps = ["ADTypes", "BoundaryValueDiffEqAscher", "BoundaryValueDiffEqCore", "BoundaryValueDiffEqFIRK", "BoundaryValueDiffEqMIRK", "BoundaryValueDiffEqMIRKN", "BoundaryValueDiffEqShooting", "DiffEqBase", "FastClosures", "ForwardDiff", "LinearAlgebra", "Reexport", "SciMLBase"]
@@ -757,9 +731,9 @@ version = "1.16.2+0"
 
 [[deps.DelayDiffEq]]
 deps = ["ArrayInterface", "ConcreteStructs", "DataStructures", "DiffEqBase", "FastBroadcast", "ForwardDiff", "LinearAlgebra", "Logging", "OrdinaryDiffEq", "OrdinaryDiffEqCore", "OrdinaryDiffEqDefault", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqFunctionMap", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqRosenbrock", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SimpleNonlinearSolve", "SymbolicIndexingInterface"]
-git-tree-sha1 = "c4b5c6d91acd09165f8cbabc4eefdc10350bce68"
+git-tree-sha1 = "55d51bd800f45c746e5e92e16ab3e88d8df54117"
 uuid = "bcd4f6db-9728-5f36-b5f7-82caef46ccdb"
-version = "5.67.1"
+version = "5.68.0"
 
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
@@ -768,10 +742,10 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
 
 [[deps.DiffEqBase]]
-deps = ["ArrayInterface", "BracketingNonlinearSolve", "ConcreteStructs", "DocStringExtensions", "EnzymeCore", "FastBroadcast", "FastClosures", "FastPower", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "Setfield", "Static", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
-git-tree-sha1 = "0514bf55835444420ce81f8e32c5e2369d4af456"
+deps = ["ArrayInterface", "BracketingNonlinearSolve", "ConcreteStructs", "DocStringExtensions", "FastBroadcast", "FastClosures", "FastPower", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "Markdown", "MuladdMacro", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "Setfield", "Static", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
+git-tree-sha1 = "c4707e6374210edbad5d2e1be1bd0e38d8106203"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.199.0"
+version = "6.200.0"
 
     [deps.DiffEqBase.extensions]
     DiffEqBaseCUDAExt = "CUDA"
@@ -852,9 +826,9 @@ version = "7.17.0"
 
 [[deps.DifferentiationInterface]]
 deps = ["ADTypes", "LinearAlgebra"]
-git-tree-sha1 = "44d9321761ed99e1d444b5081b3166d3259adcf0"
+git-tree-sha1 = "7ae99144ea44715402c6c882bfef2adbeadbc4ce"
 uuid = "a0c0ee7d-e4b9-4e03-894e-1c5f64a51d63"
-version = "0.7.14"
+version = "0.7.16"
 
     [deps.DifferentiationInterface.extensions]
     DifferentiationInterfaceChainRulesCoreExt = "ChainRulesCore"
@@ -1040,9 +1014,9 @@ uuid = "442a2c76-b920-505d-bb47-c5924d526838"
 version = "1.1.0"
 
 [[deps.FastPower]]
-git-tree-sha1 = "1dd291358e0e3a31f77dbbb76ce7abbcca38d410"
+git-tree-sha1 = "862831f78c7a48681a074ecc9aac09f2de563f71"
 uuid = "a4df4552-cc26-4903-aec0-212e50a0e84b"
-version = "1.3.0"
+version = "1.3.1"
 
     [deps.FastPower.extensions]
     FastPowerEnzymeExt = "Enzyme"
@@ -1078,12 +1052,6 @@ weakdeps = ["PDMats", "SparseArrays", "StaticArrays", "Statistics"]
     FillArraysSparseArraysExt = "SparseArrays"
     FillArraysStaticArraysExt = "StaticArrays"
     FillArraysStatisticsExt = "Statistics"
-
-[[deps.FindFirstFunctions]]
-deps = ["PrecompileTools"]
-git-tree-sha1 = "1960e97427e0c1e66b603f4d047e6367a70c5d9e"
-uuid = "64ca27bc-2ba2-4a57-88aa-44e436879224"
-version = "1.7.0"
 
 [[deps.FiniteDiff]]
 deps = ["ArrayInterface", "LinearAlgebra", "Setfield"]
@@ -1122,9 +1090,9 @@ version = "1.3.7"
 
 [[deps.ForwardDiff]]
 deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
-git-tree-sha1 = "b2977f86ed76484de6f29d5b36f2fa686f085487"
+git-tree-sha1 = "eef4c86803f47dcb61e9b8790ecaa96956fdd8ae"
 uuid = "f6369f11-7733-5829-9624-2563aa707210"
-version = "1.3.1"
+version = "1.3.2"
 weakdeps = ["StaticArrays"]
 
     [deps.ForwardDiff.extensions]
@@ -1172,9 +1140,9 @@ version = "0.2.0"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Preferences", "Printf", "Qt6Wayland_jll", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "p7zip_jll"]
-git-tree-sha1 = "6949039c4db076a5967228bf9d7b6f32f2324328"
+git-tree-sha1 = "ee0585b62671ce88e48d3409733230b401c9775c"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.73.20"
+version = "0.73.22"
 
     [deps.GR.extensions]
     IJuliaExt = "IJulia"
@@ -1184,9 +1152,9 @@ version = "0.73.20"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "04a6eb1e57dc3a6992b5af5aa753a2f8d3a1028e"
+git-tree-sha1 = "7dd7173f7129a1b6f84e0f03e0890cd1189b0659"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.73.20+0"
+version = "0.73.22+0"
 
 [[deps.GenericSchur]]
 deps = ["LinearAlgebra", "Printf"]
@@ -1208,9 +1176,9 @@ version = "9.55.1+0"
 
 [[deps.Glib_jll]]
 deps = ["Artifacts", "GettextRuntime_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE2_jll", "Zlib_jll"]
-git-tree-sha1 = "6b4d2dc81736fe3980ff0e8879a9fc7c33c44ddf"
+git-tree-sha1 = "24f6def62397474a297bfcec22384101609142ed"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
-version = "2.86.2+0"
+version = "2.86.3+0"
 
 [[deps.Graphite2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1220,9 +1188,9 @@ version = "1.3.15+0"
 
 [[deps.Graphs]]
 deps = ["ArnoldiMethod", "DataStructures", "Inflate", "LinearAlgebra", "Random", "SimpleTraits", "SparseArrays", "Statistics"]
-git-tree-sha1 = "cbf93df308fe790f9068b7e177e8baa2f46b86c9"
+git-tree-sha1 = "031d63d09bd3e6e319df66bb466f5c3e8d147bee"
 uuid = "86223c79-3864-5bf0-83f7-82e725a168b6"
-version = "1.13.3"
+version = "1.13.4"
 
     [deps.Graphs.extensions]
     GraphsSharedArraysExt = "SharedArrays"
@@ -1258,12 +1226,6 @@ version = "0.3.28"
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
-
-[[deps.ImplicitDiscreteSolve]]
-deps = ["ConcreteStructs", "DiffEqBase", "NonlinearSolveBase", "NonlinearSolveFirstOrder", "OrdinaryDiffEqCore", "Reexport", "SciMLBase", "SymbolicIndexingInterface"]
-git-tree-sha1 = "c98d9dcbc64b80e246a47d190891c382a221b52e"
-uuid = "3263718b-31ed-49cf-8a0f-35a466e8af96"
-version = "1.6.0"
 
 [[deps.Inflate]]
 git-tree-sha1 = "d1b1b796e47d94588b3757fe84fbf65a5ec4a80d"
@@ -1360,9 +1322,9 @@ version = "1.12.0"
 
 [[deps.JumpProcesses]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqCallbacks", "DocStringExtensions", "FunctionWrappers", "Graphs", "LinearAlgebra", "PoissonRandom", "Random", "RecursiveArrayTools", "Reexport", "SciMLBase", "Setfield", "StaticArrays", "SymbolicIndexingInterface"]
-git-tree-sha1 = "0593944281222db3b3f3bc1cfe2c464a17f9eea1"
+git-tree-sha1 = "8c72500050e3067e33408c36840c77bfadd4c3db"
 uuid = "ccbc3e58-028d-4f4c-8cd5-9ae44345cda5"
-version = "9.21.0"
+version = "9.21.2"
 
     [deps.JumpProcesses.extensions]
     JumpProcessesKernelAbstractionsExt = ["Adapt", "KernelAbstractions"]
@@ -1374,9 +1336,9 @@ version = "9.21.0"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
-git-tree-sha1 = "fd0812fa5d58edfa2948342adca9b0a175b17d8a"
+git-tree-sha1 = "125d65fe5042faf078383312dd060adf11d90802"
 uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
-version = "0.10.4"
+version = "0.10.5"
 
 [[deps.LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1433,9 +1395,9 @@ version = "0.1.17"
 
 [[deps.LazyArrays]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "MacroTools", "SparseArrays"]
-git-tree-sha1 = "70ebe3bcf87d6a1e7435ef5182c13a91161ba9b8"
+git-tree-sha1 = "41d433e5854d7a67e8ab2b04962a713fcbcffcf1"
 uuid = "5078a376-72f3-5289-bfd5-ec5146d43c02"
-version = "2.9.4"
+version = "2.9.5"
 
     [deps.LazyArrays.extensions]
     LazyArraysBandedMatricesExt = "BandedMatrices"
@@ -1509,9 +1471,9 @@ version = "1.18.0+0"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "3acf07f130a76f87c041cfb2ff7d7284ca67b072"
+git-tree-sha1 = "97bbca976196f2a1eb9607131cb108c69ec3f8a6"
 uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
-version = "2.41.2+0"
+version = "2.41.3+0"
 
 [[deps.Libtiff_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "XZ_jll", "Zlib_jll", "Zstd_jll"]
@@ -1521,9 +1483,9 @@ version = "4.7.2+0"
 
 [[deps.Libuuid_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "2a7a12fc0a4e7fb773450d17975322aa77142106"
+git-tree-sha1 = "d0205286d9eceadc518742860bf23f703779a3d6"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
-version = "2.41.2+0"
+version = "2.41.3+0"
 
 [[deps.LineSearch]]
 deps = ["ADTypes", "CommonSolve", "ConcreteStructs", "FastClosures", "LinearAlgebra", "MaybeInplace", "PrecompileTools", "SciMLBase", "SciMLJacobianOperators", "StaticArraysCore"]
@@ -1548,9 +1510,9 @@ version = "1.12.0"
 
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ChainRulesCore", "ConcreteStructs", "DocStringExtensions", "EnumX", "GPUArraysCore", "InteractiveUtils", "Krylov", "Libdl", "LinearAlgebra", "MKL_jll", "Markdown", "OpenBLAS_jll", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "Setfield", "StaticArraysCore"]
-git-tree-sha1 = "1fdeafa25801ec2e0caa88fbe0afd7c41d3d087a"
+git-tree-sha1 = "7a1b73e0921e3278fce6a6cd80003c063ed937b4"
 uuid = "7ed4a6bd-45f5-4d41-b270-4a48e9bafcae"
-version = "3.57.0"
+version = "3.58.0"
 
     [deps.LinearSolve.extensions]
     LinearSolveAMDGPUExt = "AMDGPU"
@@ -1571,6 +1533,7 @@ version = "3.57.0"
     LinearSolveKrylovKitExt = "KrylovKit"
     LinearSolveMetalExt = "Metal"
     LinearSolveMooncakeExt = "Mooncake"
+    LinearSolvePETScExt = ["PETSc", "SparseArrays"]
     LinearSolvePardisoExt = ["Pardiso", "SparseArrays"]
     LinearSolveRecursiveFactorizationExt = "RecursiveFactorization"
     LinearSolveSparseArraysExt = "SparseArrays"
@@ -1595,6 +1558,7 @@ version = "3.57.0"
     LAPACK_jll = "51474c39-65e3-53ba-86ba-03b1b862ec14"
     Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
     Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
+    PETSc = "ace2c81b-2b5f-4b1e-a30d-d662738edfe0"
     Pardiso = "46dd5b70-b6fb-5a00-ae2d-e8fea33afaf2"
     RecursiveFactorization = "f2c3362d-daeb-58d1-803e-2bc74f2840b4"
     SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
@@ -1695,54 +1659,6 @@ version = "1.2.0"
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 version = "1.11.0"
 
-[[deps.ModelingToolkit]]
-deps = ["ADTypes", "BipartiteGraphs", "BlockArrays", "Combinatorics", "CommonSolve", "DataStructures", "DiffEqBase", "DifferentiationInterface", "DocStringExtensions", "FillArrays", "FindFirstFunctions", "ForwardDiff", "Graphs", "InteractiveUtils", "Libdl", "LinearAlgebra", "ModelingToolkitBase", "ModelingToolkitTearing", "Moshi", "OffsetArrays", "OrderedCollections", "PreallocationTools", "PrecompileTools", "REPL", "Reexport", "RuntimeGeneratedFunctions", "SCCNonlinearSolve", "SciMLBase", "SciMLPublic", "Serialization", "Setfield", "SimpleNonlinearSolve", "SparseArrays", "StateSelection", "StaticArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics", "UnPack"]
-git-tree-sha1 = "25e74061b4bb00d8f961df1741a452fab80101b8"
-uuid = "961ee093-0014-501f-94e3-6117800e7a78"
-version = "11.7.2"
-
-    [deps.ModelingToolkit.extensions]
-    MTKFMIExt = "FMIImport"
-
-    [deps.ModelingToolkit.weakdeps]
-    FMIImport = "9fcbc62e-52a0-44e9-a616-1359a0008194"
-
-[[deps.ModelingToolkitBase]]
-deps = ["ADTypes", "AbstractTrees", "ArrayInterface", "BipartiteGraphs", "BlockArrays", "Combinatorics", "CommonSolve", "Compat", "ConstructionBase", "DataStructures", "DiffEqBase", "DiffEqCallbacks", "DiffRules", "DifferentiationInterface", "DocStringExtensions", "DomainSets", "EnumX", "ExprTools", "FillArrays", "FindFirstFunctions", "ForwardDiff", "FunctionWrappers", "FunctionWrappersWrappers", "Graphs", "ImplicitDiscreteSolve", "InteractiveUtils", "JumpProcesses", "Libdl", "LinearAlgebra", "Moshi", "NaNMath", "OffsetArrays", "OrderedCollections", "PreallocationTools", "PrecompileTools", "REPL", "Random", "ReadOnlyDicts", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLBase", "SciMLPublic", "SciMLStructures", "Serialization", "Setfield", "SimpleNonlinearSolve", "SparseArrays", "SpecialFunctions", "StaticArrays", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics", "UnPack"]
-git-tree-sha1 = "b67984b41b89c7519445bfcc78855087c7fea567"
-uuid = "7771a370-6774-4173-bd38-47e70ca0b839"
-version = "1.6.3"
-
-    [deps.ModelingToolkitBase.extensions]
-    MTKBifurcationKitExt = "BifurcationKit"
-    MTKCasADiDynamicOptExt = "CasADi"
-    MTKChainRulesCoreExt = "ChainRulesCore"
-    MTKDiffEqNoiseProcessExt = "DiffEqNoiseProcess"
-    MTKDynamicQuantitiesExt = "DynamicQuantities"
-    MTKInfiniteOptExt = "InfiniteOpt"
-    MTKJuliaFormatterExt = "JuliaFormatter"
-    MTKLabelledArraysExt = "LabelledArrays"
-    MTKLatexifyExt = "Latexify"
-    MTKPyomoDynamicOptExt = "Pyomo"
-
-    [deps.ModelingToolkitBase.weakdeps]
-    BifurcationKit = "0f109fa4-8a5d-4b75-95aa-f515264e7665"
-    CasADi = "c49709b8-5c63-11e9-2fb2-69db5844192f"
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    DiffEqNoiseProcess = "77a26b50-5914-5dd7-bc55-306e6241c503"
-    DynamicQuantities = "06fc5a27-2a28-4c7c-a15d-362465fb6821"
-    InfiniteOpt = "20393b10-9daf-11e9-18c9-8db751c92c57"
-    JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
-    LabelledArrays = "2ee39098-c373-598a-b85f-a56591580800"
-    Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-    Pyomo = "0e8e1daf-01b5-4eba-a626-3897743a3816"
-
-[[deps.ModelingToolkitTearing]]
-deps = ["BipartiteGraphs", "CommonSolve", "DocStringExtensions", "Graphs", "LinearAlgebra", "ModelingToolkitBase", "Moshi", "OffsetArrays", "OrderedCollections", "SciMLBase", "Setfield", "SparseArrays", "StateSelection", "SymbolicIndexingInterface", "SymbolicUtils", "Symbolics"]
-git-tree-sha1 = "aa881b0476654be144739d9bd5ed014b10d3accd"
-uuid = "6bb917b9-1269-42b9-9f7c-b0dca72083ab"
-version = "1.2.3"
-
 [[deps.Moshi]]
 deps = ["ExproniconLite", "Jieko"]
 git-tree-sha1 = "53f817d3e84537d84545e0ad749e483412dd6b2a"
@@ -1792,9 +1708,9 @@ version = "1.3.0"
 
 [[deps.NonlinearSolve]]
 deps = ["ADTypes", "ArrayInterface", "BracketingNonlinearSolve", "CommonSolve", "ConcreteStructs", "DifferentiationInterface", "FastClosures", "FiniteDiff", "ForwardDiff", "LineSearch", "LinearAlgebra", "LinearSolve", "NonlinearSolveBase", "NonlinearSolveFirstOrder", "NonlinearSolveQuasiNewton", "NonlinearSolveSpectralMethods", "PrecompileTools", "Preferences", "Reexport", "SciMLBase", "SciMLLogging", "SimpleNonlinearSolve", "StaticArraysCore", "SymbolicIndexingInterface"]
-git-tree-sha1 = "5db62e7c18af752a7a5260ed7576e7429ca87be4"
+git-tree-sha1 = "da41d5cd90c1118f5a8914392cf561263a1d09cb"
 uuid = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
-version = "4.14.0"
+version = "4.15.0"
 
     [deps.NonlinearSolve.extensions]
     NonlinearSolveFastLevenbergMarquardtExt = "FastLevenbergMarquardt"
@@ -1825,9 +1741,9 @@ version = "4.14.0"
 
 [[deps.NonlinearSolveBase]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "CommonSolve", "Compat", "ConcreteStructs", "DifferentiationInterface", "EnzymeCore", "FastClosures", "LinearAlgebra", "Markdown", "MaybeInplace", "Preferences", "Printf", "RecursiveArrayTools", "SciMLBase", "SciMLJacobianOperators", "SciMLLogging", "SciMLOperators", "SciMLStructures", "Setfield", "StaticArraysCore", "SymbolicIndexingInterface", "TimerOutputs"]
-git-tree-sha1 = "223f7c343c1cb436ca13587fd4da6ac94ccceb5c"
+git-tree-sha1 = "9323e063ce69851b28e5c96539b2e2024f9a7e4c"
 uuid = "be0214bd-f91f-a760-ac4e-3421ce2b2da0"
-version = "2.10.0"
+version = "2.11.2"
 
     [deps.NonlinearSolveBase.extensions]
     NonlinearSolveBaseBandedMatricesExt = "BandedMatrices"
@@ -1857,9 +1773,9 @@ version = "2.10.0"
 
 [[deps.NonlinearSolveFirstOrder]]
 deps = ["ADTypes", "ArrayInterface", "CommonSolve", "ConcreteStructs", "FiniteDiff", "ForwardDiff", "LineSearch", "LinearAlgebra", "LinearSolve", "MaybeInplace", "NonlinearSolveBase", "PrecompileTools", "Reexport", "SciMLBase", "SciMLJacobianOperators", "Setfield", "StaticArraysCore"]
-git-tree-sha1 = "bd6bb56e107fe9bea276982a03b8ed13332583b4"
+git-tree-sha1 = "df31d105d8e7254447256a44606f2a7e98b61aba"
 uuid = "5959db7a-ea39-4486-b5fe-2dd0bf03d60d"
-version = "1.11.0"
+version = "1.11.1"
 
 [[deps.NonlinearSolveQuasiNewton]]
 deps = ["ArrayInterface", "CommonSolve", "ConcreteStructs", "LinearAlgebra", "LinearSolve", "MaybeInplace", "NonlinearSolveBase", "PrecompileTools", "Reexport", "SciMLBase", "SciMLOperators", "StaticArraysCore"]
@@ -1880,15 +1796,6 @@ weakdeps = ["ForwardDiff"]
 
     [deps.NonlinearSolveSpectralMethods.extensions]
     NonlinearSolveSpectralMethodsForwardDiffExt = "ForwardDiff"
-
-[[deps.OffsetArrays]]
-git-tree-sha1 = "117432e406b5c023f665fa73dc26e79ec3630151"
-uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.17.0"
-weakdeps = ["Adapt"]
-
-    [deps.OffsetArrays.extensions]
-    OffsetArraysAdaptExt = "Adapt"
 
 [[deps.Ogg_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1931,9 +1838,9 @@ version = "0.5.6+0"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "39a11854f0cba27aa41efaedf43c77c5daa6be51"
+git-tree-sha1 = "e2bb57a313a74b8104064b7efd01406c0a50d2ff"
 uuid = "91d4177d-7536-5919-b921-800302f37372"
-version = "1.6.0+0"
+version = "1.6.1+0"
 
 [[deps.OrderedCollections]]
 git-tree-sha1 = "05868e21324cede2207c6f0f466b4bfef6d5e7ee"
@@ -1942,9 +1849,9 @@ version = "1.8.1"
 
 [[deps.OrdinaryDiffEq]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "CommonSolve", "DataStructures", "DiffEqBase", "DocStringExtensions", "EnumX", "ExponentialUtilities", "FastBroadcast", "FastClosures", "FillArrays", "FiniteDiff", "ForwardDiff", "FunctionWrappersWrappers", "InteractiveUtils", "LineSearches", "LinearAlgebra", "LinearSolve", "Logging", "MacroTools", "MuladdMacro", "NonlinearSolve", "OrdinaryDiffEqAdamsBashforthMoulton", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqDefault", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqExplicitRK", "OrdinaryDiffEqExponentialRK", "OrdinaryDiffEqExtrapolation", "OrdinaryDiffEqFIRK", "OrdinaryDiffEqFeagin", "OrdinaryDiffEqFunctionMap", "OrdinaryDiffEqHighOrderRK", "OrdinaryDiffEqIMEXMultistep", "OrdinaryDiffEqLinear", "OrdinaryDiffEqLowOrderRK", "OrdinaryDiffEqLowStorageRK", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqNordsieck", "OrdinaryDiffEqPDIRK", "OrdinaryDiffEqPRK", "OrdinaryDiffEqQPRK", "OrdinaryDiffEqRKN", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqSDIRK", "OrdinaryDiffEqSSPRK", "OrdinaryDiffEqStabilizedIRK", "OrdinaryDiffEqStabilizedRK", "OrdinaryDiffEqSymplecticRK", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "Polyester", "PreallocationTools", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SciMLStructures", "SimpleNonlinearSolve", "SparseArrays", "Static", "StaticArrayInterface", "StaticArrays", "TruncatedStacktraces"]
-git-tree-sha1 = "dc70b19f140e9cbd02864c96ccfc833cbc6b8dd7"
+git-tree-sha1 = "924e1db15095c7df6b844231c00c40d756a7553d"
 uuid = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
-version = "6.106.0"
+version = "6.108.0"
 
 [[deps.OrdinaryDiffEqAdamsBashforthMoulton]]
 deps = ["DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqLowOrderRK", "Polyester", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static"]
@@ -1954,23 +1861,23 @@ version = "1.9.0"
 
 [[deps.OrdinaryDiffEqBDF]]
 deps = ["ADTypes", "ArrayInterface", "DiffEqBase", "FastBroadcast", "LinearAlgebra", "MacroTools", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqSDIRK", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays", "TruncatedStacktraces"]
-git-tree-sha1 = "156f2623ac97e7cf340848ba606f1226998980af"
+git-tree-sha1 = "6d2cca7ecba41232b0a4ef6cee49e265d2367353"
 uuid = "6ad6398a-0878-4a85-9266-38940aa047c8"
-version = "1.14.0"
+version = "1.16.0"
 
 [[deps.OrdinaryDiffEqCore]]
-deps = ["ADTypes", "Accessors", "Adapt", "ArrayInterface", "ConcreteStructs", "DataStructures", "DiffEqBase", "DocStringExtensions", "EnumX", "FastBroadcast", "FastClosures", "FastPower", "FillArrays", "FunctionWrappersWrappers", "InteractiveUtils", "LinearAlgebra", "Logging", "MacroTools", "MuladdMacro", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "SciMLStructures", "Static", "StaticArrayInterface", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
-git-tree-sha1 = "862b950dd2a4d406b6e9cbb71f6e3b2043647665"
+deps = ["ADTypes", "Accessors", "Adapt", "ArrayInterface", "ConcreteStructs", "DataStructures", "DiffEqBase", "DocStringExtensions", "EnumX", "EnzymeCore", "FastBroadcast", "FastClosures", "FastPower", "FillArrays", "FunctionWrappersWrappers", "InteractiveUtils", "LinearAlgebra", "Logging", "MacroTools", "MuladdMacro", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "SciMLStructures", "Static", "StaticArrayInterface", "StaticArraysCore", "SymbolicIndexingInterface", "TruncatedStacktraces"]
+git-tree-sha1 = "6ccf0c6b8fea7079940d1eaa1b8cb94270dba0aa"
 uuid = "bbf590c4-e513-4bbe-9b18-05decba2e5d8"
-version = "3.2.0"
+version = "3.4.2"
 
     [deps.OrdinaryDiffEqCore.extensions]
-    OrdinaryDiffEqCoreEnzymeCoreExt = "EnzymeCore"
     OrdinaryDiffEqCoreMooncakeExt = "Mooncake"
+    OrdinaryDiffEqCoreSparseArraysExt = "SparseArrays"
 
     [deps.OrdinaryDiffEqCore.weakdeps]
-    EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
     Mooncake = "da2b9cff-9c12-43a0-ae48-6db2b0edb7d6"
+    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.OrdinaryDiffEqDefault]]
 deps = ["ADTypes", "DiffEqBase", "EnumX", "LinearAlgebra", "LinearSolve", "OrdinaryDiffEqBDF", "OrdinaryDiffEqCore", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "PrecompileTools", "Preferences", "Reexport", "SciMLBase"]
@@ -1980,9 +1887,9 @@ version = "1.12.0"
 
 [[deps.OrdinaryDiffEqDifferentiation]]
 deps = ["ADTypes", "ArrayInterface", "ConcreteStructs", "ConstructionBase", "DiffEqBase", "DifferentiationInterface", "FastBroadcast", "FiniteDiff", "ForwardDiff", "FunctionWrappersWrappers", "LinearAlgebra", "LinearSolve", "OrdinaryDiffEqCore", "SciMLBase", "SciMLOperators", "SparseMatrixColorings", "StaticArrayInterface", "StaticArrays"]
-git-tree-sha1 = "c3706545346a550a2669d8bcfe6db683af04a21c"
+git-tree-sha1 = "752ab1cc4a89dc23db63a0e747c8ef47e79473f2"
 uuid = "4302a76b-040a-498a-8c04-15b101fed76b"
-version = "1.22.0"
+version = "2.0.0"
 weakdeps = ["SparseArrays"]
 
     [deps.OrdinaryDiffEqDifferentiation.extensions]
@@ -1996,21 +1903,21 @@ version = "1.8.0"
 
 [[deps.OrdinaryDiffEqExponentialRK]]
 deps = ["ADTypes", "DiffEqBase", "ExponentialUtilities", "FastBroadcast", "LinearAlgebra", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "RecursiveArrayTools", "Reexport", "SciMLBase"]
-git-tree-sha1 = "65f2e40d7e9b1415c41838ec762777a4c36e4804"
+git-tree-sha1 = "72156f954b199ff23dada0e8c0f12c44503b5cf9"
 uuid = "e0540318-69ee-4070-8777-9e2de6de23de"
-version = "1.12.0"
+version = "1.13.0"
 
 [[deps.OrdinaryDiffEqExtrapolation]]
 deps = ["ADTypes", "DiffEqBase", "FastBroadcast", "FastPower", "LinearSolve", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "Polyester", "RecursiveArrayTools", "Reexport", "SciMLBase"]
-git-tree-sha1 = "e2f3ebd6cd7ed9c8d551fb10192644e8f6dd3cbb"
+git-tree-sha1 = "2c2b3839d8a7cd116adbce364e13e39f2ddf41b4"
 uuid = "becaefa8-8ca2-5cf9-886d-c06f3d2bd2c4"
-version = "1.13.0"
+version = "1.15.0"
 
 [[deps.OrdinaryDiffEqFIRK]]
 deps = ["ADTypes", "DiffEqBase", "FastBroadcast", "FastGaussQuadrature", "FastPower", "LinearAlgebra", "LinearSolve", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "Polyester", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators"]
-git-tree-sha1 = "cbb6a36f09f1357a526c55a0a6805b60121eafb8"
+git-tree-sha1 = "82d27173ea27a4e0052ff1019c393bda167fcc13"
 uuid = "5960d6e9-dd7a-4743-88e7-cf307b64f125"
-version = "1.20.0"
+version = "1.22.0"
 
 [[deps.OrdinaryDiffEqFeagin]]
 deps = ["DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "Polyester", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static"]
@@ -2032,9 +1939,9 @@ version = "1.9.0"
 
 [[deps.OrdinaryDiffEqIMEXMultistep]]
 deps = ["ADTypes", "DiffEqBase", "FastBroadcast", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "Reexport", "SciMLBase"]
-git-tree-sha1 = "23602428114124a3e3df85fcbc5b461c79fb91bf"
+git-tree-sha1 = "9280abaf9ac36d60dd774113f7ce8a7f826d6e2e"
 uuid = "9f002381-b378-40b7-97a6-27a27c83f129"
-version = "1.11.0"
+version = "1.12.0"
 
 [[deps.OrdinaryDiffEqLinear]]
 deps = ["DiffEqBase", "ExponentialUtilities", "LinearAlgebra", "OrdinaryDiffEqCore", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators"]
@@ -2050,27 +1957,27 @@ version = "1.10.0"
 
 [[deps.OrdinaryDiffEqLowStorageRK]]
 deps = ["Adapt", "DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static", "StaticArrays"]
-git-tree-sha1 = "708c362418bd4503fd158f4f4e53151fbe57b46a"
+git-tree-sha1 = "bd032c73716bc538033af041ca8903df6c813bfd"
 uuid = "b0944070-b475-4768-8dec-fb6eb410534d"
-version = "1.11.0"
+version = "1.12.0"
 
 [[deps.OrdinaryDiffEqNonlinearSolve]]
 deps = ["ADTypes", "ArrayInterface", "DiffEqBase", "FastBroadcast", "FastClosures", "ForwardDiff", "LinearAlgebra", "LinearSolve", "MuladdMacro", "NonlinearSolve", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "PreallocationTools", "RecursiveArrayTools", "SciMLBase", "SciMLOperators", "SciMLStructures", "SimpleNonlinearSolve", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "9f0be4bd586829a28a04c8f923598497f56ac226"
+git-tree-sha1 = "c2a64b20ab8c6c3d0155b146b02dbc79182d5f09"
 uuid = "127b3ac7-2247-4354-8eb6-78cf4e7c58e8"
-version = "1.19.0"
+version = "1.20.0"
 
 [[deps.OrdinaryDiffEqNordsieck]]
 deps = ["DiffEqBase", "FastBroadcast", "LinearAlgebra", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqTsit5", "Polyester", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static"]
-git-tree-sha1 = "05f3319c3bf1440897dc613194eb3db4d2d3e692"
+git-tree-sha1 = "facea9aaf48eed5e9ba66d8b3246e51417c084d0"
 uuid = "c9986a66-5c92-4813-8696-a7ec84c806c8"
-version = "1.8.0"
+version = "1.9.0"
 
 [[deps.OrdinaryDiffEqPDIRK]]
 deps = ["ADTypes", "DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "Polyester", "Reexport", "SciMLBase", "StaticArrays"]
-git-tree-sha1 = "7d63467f59f6504672ba93226f156f99c6095f60"
+git-tree-sha1 = "c95dd60623e11464e6079b77d2ce604fb399a02d"
 uuid = "5dd0a6cf-3d4b-4314-aa06-06d4e299bc89"
-version = "1.10.0"
+version = "1.11.0"
 
 [[deps.OrdinaryDiffEqPRK]]
 deps = ["DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "Polyester", "Reexport", "SciMLBase"]
@@ -2092,15 +1999,15 @@ version = "1.9.0"
 
 [[deps.OrdinaryDiffEqRosenbrock]]
 deps = ["ADTypes", "DiffEqBase", "DifferentiationInterface", "FastBroadcast", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "LinearSolve", "MacroTools", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static"]
-git-tree-sha1 = "e4605c3930703b5d38083ce1a998ee824dd67266"
+git-tree-sha1 = "326b2259453f27d257ff1185d34b423c74f76b61"
 uuid = "43230ef6-c299-4910-a778-202eb28ce4ce"
-version = "1.22.0"
+version = "1.23.0"
 
 [[deps.OrdinaryDiffEqSDIRK]]
 deps = ["ADTypes", "DiffEqBase", "FastBroadcast", "LinearAlgebra", "MacroTools", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "RecursiveArrayTools", "Reexport", "SciMLBase", "TruncatedStacktraces"]
-git-tree-sha1 = "5d0a230f4e431e53af19502eaea8778f8f15edd4"
+git-tree-sha1 = "0b766d820e3b948881f1f246899de9ef3d329224"
 uuid = "2d112036-d095-4a1e-ab9a-08536f3ecdbf"
-version = "1.11.0"
+version = "1.12.0"
 
 [[deps.OrdinaryDiffEqSSPRK]]
 deps = ["DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static", "StaticArrays"]
@@ -2110,9 +2017,9 @@ version = "1.11.0"
 
 [[deps.OrdinaryDiffEqStabilizedIRK]]
 deps = ["ADTypes", "DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqStabilizedRK", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays"]
-git-tree-sha1 = "1719060baf014a3c1a6506113bc09d82a0903f0e"
+git-tree-sha1 = "cf6856c731ddf9866e3e22612cce5e270f071545"
 uuid = "e3e12d00-db14-5390-b879-ac3dd2ef6296"
-version = "1.10.0"
+version = "1.11.0"
 
 [[deps.OrdinaryDiffEqStabilizedRK]]
 deps = ["DiffEqBase", "FastBroadcast", "MuladdMacro", "OrdinaryDiffEqCore", "RecursiveArrayTools", "Reexport", "SciMLBase", "StaticArrays"]
@@ -2134,9 +2041,9 @@ version = "1.9.0"
 
 [[deps.OrdinaryDiffEqVerner]]
 deps = ["DiffEqBase", "FastBroadcast", "LinearAlgebra", "MuladdMacro", "OrdinaryDiffEqCore", "Polyester", "PrecompileTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "Static", "TruncatedStacktraces"]
-git-tree-sha1 = "7c50b87bc8f00a38ef7acb8457828585f9ba4300"
+git-tree-sha1 = "5ca5dbbfea89e14f283ce9fe2301c528ff4ec007"
 uuid = "79d7bb75-1356-48c1-b8c0-6832512096c2"
-version = "1.10.0"
+version = "1.11.0"
 
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -2194,9 +2101,9 @@ version = "1.4.4"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "JLFzf", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "PrecompileTools", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "RelocatableFolders", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "TOML", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "063ef757a1e0e15af77bbe92be92da672793fd4e"
+git-tree-sha1 = "1cc8ad0762e59e713ee3ef28f9b78b2c9f4ca078"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.41.4"
+version = "1.41.5"
 
     [deps.Plots.extensions]
     FileIOExt = "FileIO"
@@ -2337,12 +2244,6 @@ git-tree-sha1 = "e6f7ddf48cf141cb312b078ca21cb2d29d0dc11d"
 uuid = "988b38a3-91fc-5605-94a2-ee2116b3bd83"
 version = "0.2.0"
 
-[[deps.ReadOnlyDicts]]
-deps = ["DocStringExtensions"]
-git-tree-sha1 = "711acef70140078d808be9cd33040f510af57f5e"
-uuid = "795d4caa-f5a7-4580-b5d8-c01d53451803"
-version = "1.0.1"
-
 [[deps.RecipesBase]]
 deps = ["PrecompileTools"]
 git-tree-sha1 = "5c3d09cc4f31f5fc6af001c250bf1278733100ff"
@@ -2357,9 +2258,9 @@ version = "0.6.12"
 
 [[deps.RecursiveArrayTools]]
 deps = ["Adapt", "ArrayInterface", "DocStringExtensions", "GPUArraysCore", "LinearAlgebra", "PrecompileTools", "RecipesBase", "StaticArraysCore", "SymbolicIndexingInterface"]
-git-tree-sha1 = "d8fbab1e8a272cc8e73fc24515075e48e6f77034"
+git-tree-sha1 = "81750fa442cc5cb3ab1ba89b1cdf8eda543e6905"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "3.45.1"
+version = "3.47.0"
 
     [deps.RecursiveArrayTools.extensions]
     RecursiveArrayToolsFastBroadcastExt = "FastBroadcast"
@@ -2426,19 +2327,9 @@ version = "0.5.1+0"
 
 [[deps.RuntimeGeneratedFunctions]]
 deps = ["ExprTools", "SHA", "Serialization"]
-git-tree-sha1 = "2f609ec2295c452685d3142bc4df202686e555d2"
+git-tree-sha1 = "7257165d5477fd1025f7cb656019dcb6b0512c38"
 uuid = "7e49a35a-f44a-4d26-94aa-eba1b4ca6b47"
-version = "0.5.16"
-
-[[deps.SCCNonlinearSolve]]
-deps = ["CommonSolve", "PrecompileTools", "Reexport", "SciMLBase", "SymbolicIndexingInterface"]
-git-tree-sha1 = "733200f6b48ee91261cceefdc9237815dc782ee3"
-uuid = "9dfe8606-65a1-4bb3-9748-cb89d1561431"
-version = "1.9.0"
-weakdeps = ["ChainRulesCore"]
-
-    [deps.SCCNonlinearSolve.extensions]
-    SCCNonlinearSolveChainRulesCoreExt = "ChainRulesCore"
+version = "0.5.17"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -2451,9 +2342,9 @@ version = "0.1.0"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "Accessors", "Adapt", "ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "Moshi", "PreallocationTools", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLLogging", "SciMLOperators", "SciMLPublic", "SciMLStructures", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface"]
-git-tree-sha1 = "9923adc7defeba6a52a99eb493ec317ac6c65942"
+git-tree-sha1 = "f7bcfaec1063675fec62ae3c934bb2a9b00a30a5"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.134.0"
+version = "2.138.0"
 
     [deps.SciMLBase.extensions]
     SciMLBaseChainRulesCoreExt = "ChainRulesCore"
@@ -2507,10 +2398,10 @@ uuid = "a6db7da4-7206-11f0-1eab-35f2a5dbe1d1"
 version = "1.8.0"
 
 [[deps.SciMLOperators]]
-deps = ["Accessors", "ArrayInterface", "DocStringExtensions", "LinearAlgebra", "MacroTools"]
-git-tree-sha1 = "d1d14b15bbebf48dc80e8a7cfe640e2d835e22ea"
+deps = ["Accessors", "ArrayInterface", "DocStringExtensions", "LinearAlgebra"]
+git-tree-sha1 = "794c760e6aafe9f40dcd7dd30526ea33f0adc8b7"
 uuid = "c0aeaf25-5076-4817-a8d5-81caf7dfa961"
-version = "1.14.1"
+version = "1.15.1"
 weakdeps = ["SparseArrays", "StaticArraysCore"]
 
     [deps.SciMLOperators.extensions]
@@ -2594,9 +2485,9 @@ version = "1.12.0"
 
 [[deps.SparseConnectivityTracer]]
 deps = ["ADTypes", "DocStringExtensions", "FillArrays", "LinearAlgebra", "Random", "SparseArrays"]
-git-tree-sha1 = "322365aa23098275562cbad6a1c2539ee40d9618"
+git-tree-sha1 = "5fbb3a80a570933345cba55626045ba4dc05e7df"
 uuid = "9f842d2f-2579-4b1d-911e-f412cf18a3f5"
-version = "1.1.3"
+version = "1.2.0"
 
     [deps.SparseConnectivityTracer.extensions]
     SparseConnectivityTracerChainRulesCoreExt = "ChainRulesCore"
@@ -2647,18 +2538,6 @@ git-tree-sha1 = "4f96c596b8c8258cc7d3b19797854d368f243ddc"
 uuid = "860ef19b-820b-49d6-a774-d7a799459cd3"
 version = "1.0.4"
 
-[[deps.StateSelection]]
-deps = ["BipartiteGraphs", "DocStringExtensions", "FindFirstFunctions", "Graphs", "LinearAlgebra", "OrderedCollections", "Setfield", "SparseArrays"]
-git-tree-sha1 = "2482a0ee31419c63be997d8added773d412c42d2"
-uuid = "64909d44-ed92-46a8-bbd9-f047dfbdc84b"
-version = "1.3.0"
-
-    [deps.StateSelection.extensions]
-    StateSelectionDeepDiffsExt = "DeepDiffs"
-
-    [deps.StateSelection.weakdeps]
-    DeepDiffs = "ab62b9b5-e342-54a8-a765-a90f495de1a6"
-
 [[deps.Static]]
 deps = ["CommonWorldInvalidations", "IfElse", "PrecompileTools", "SciMLPublic"]
 git-tree-sha1 = "49440414711eddc7227724ae6e570c7d5559a086"
@@ -2666,15 +2545,18 @@ uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
 version = "1.3.1"
 
 [[deps.StaticArrayInterface]]
-deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Static"]
-git-tree-sha1 = "96381d50f1ce85f2663584c8e886a6ca97e60554"
+deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "SciMLPublic", "Static"]
+git-tree-sha1 = "aa1ea41b3d45ac449d10477f65e2b40e3197a0d2"
 uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
-version = "1.8.0"
-weakdeps = ["OffsetArrays", "StaticArrays"]
+version = "1.9.0"
 
     [deps.StaticArrayInterface.extensions]
     StaticArrayInterfaceOffsetArraysExt = "OffsetArrays"
     StaticArrayInterfaceStaticArraysExt = "StaticArrays"
+
+    [deps.StaticArrayInterface.weakdeps]
+    OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
@@ -2733,9 +2615,9 @@ version = "2.9.0"
 
 [[deps.StochasticDiffEq]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqNoiseProcess", "DocStringExtensions", "FastPower", "FiniteDiff", "ForwardDiff", "JumpProcesses", "LevyArea", "LinearAlgebra", "Logging", "MuladdMacro", "OrdinaryDiffEqCore", "OrdinaryDiffEqDifferentiation", "OrdinaryDiffEqNonlinearSolve", "Random", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLLogging", "SciMLOperators", "SimpleNonlinearSolve", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "8158222b220f99334f57f98338003d02b2360990"
+git-tree-sha1 = "4d24c03131bbdfde0b0a4d3232d8b137299bbf52"
 uuid = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-version = "6.92.0"
+version = "6.93.0"
 
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "LinearAlgebra", "ManualMemory", "SIMDTypes", "Static", "StaticArrayInterface", "ThreadingUtilities"]
@@ -2808,9 +2690,9 @@ version = "1.1.0"
 
 [[deps.SymbolicUtils]]
 deps = ["AbstractTrees", "ArrayInterface", "Combinatorics", "ConstructionBase", "DataStructures", "DocStringExtensions", "DynamicPolynomials", "EnumX", "ExproniconLite", "LinearAlgebra", "MacroTools", "Moshi", "MultivariatePolynomials", "MutableArithmetics", "NaNMath", "PrecompileTools", "ReadOnlyArrays", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "TaskLocalValues", "TermInterface", "WeakCacheSets"]
-git-tree-sha1 = "734930f0839db6ac2d38ef816b08c24b838bb258"
+git-tree-sha1 = "4c531f339c0aaf0d9d83b1987e35a7e5444c4b74"
 uuid = "d1185830-fcd6-423d-90d6-eec64667417b"
-version = "4.13.0"
+version = "4.17.0"
 
     [deps.SymbolicUtils.extensions]
     SymbolicUtilsChainRulesCoreExt = "ChainRulesCore"
@@ -2826,15 +2708,16 @@ version = "4.13.0"
 
 [[deps.Symbolics]]
 deps = ["ADTypes", "AbstractPlutoDingetjes", "ArrayInterface", "Bijections", "CommonWorldInvalidations", "ConstructionBase", "DataStructures", "DiffRules", "DocStringExtensions", "DomainSets", "DynamicPolynomials", "Libdl", "LinearAlgebra", "LogExpFunctions", "MacroTools", "Markdown", "Moshi", "MultivariatePolynomials", "MutableArithmetics", "NaNMath", "PrecompileTools", "Preferences", "Primes", "RecipesBase", "Reexport", "RuntimeGeneratedFunctions", "SciMLPublic", "Setfield", "SparseArrays", "SpecialFunctions", "StaticArraysCore", "SymbolicIndexingInterface", "SymbolicLimits", "SymbolicUtils", "TermInterface"]
-git-tree-sha1 = "11504c5285dc342b8734a7624643421f61be41e8"
+git-tree-sha1 = "cf4904e6d73a14d7a662801dd638645aa6efb213"
 uuid = "0c5d862f-8b57-4792-8d23-62f2024744c7"
-version = "7.8.0"
+version = "7.14.0"
 
     [deps.Symbolics.extensions]
     SymbolicsD3TreesExt = "D3Trees"
     SymbolicsDistributionsExt = "Distributions"
     SymbolicsForwardDiffExt = "ForwardDiff"
     SymbolicsGroebnerExt = "Groebner"
+    SymbolicsHypergeometricFunctionsExt = "HypergeometricFunctions"
     SymbolicsLatexifyExt = ["Latexify", "LaTeXStrings"]
     SymbolicsLuxExt = "Lux"
     SymbolicsNemoExt = "Nemo"
@@ -2847,6 +2730,7 @@ version = "7.8.0"
     Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
     ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
     Groebner = "0b43b601-686d-58a3-8a1c-6623616c7cd4"
+    HypergeometricFunctions = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
     LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
     Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
     Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
@@ -2924,11 +2808,6 @@ version = "1.6.1"
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 version = "1.11.0"
-
-[[deps.UnPack]]
-git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
-uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
-version = "1.0.2"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -3224,31 +3103,21 @@ version = "1.13.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╟─f17103ea-06bf-11f1-a2b0-79e68ed152eb
-# ╟─e60241b5-d35a-495a-ae92-edb846c41bb8
-# ╠═0d9be664-d7c5-4084-add2-25e5418742d6
-# ╟─91003e71-8208-43d3-93be-dd2c141c37b5
-# ╠═910c7d40-5d28-448e-aaf7-486bb000f478
-# ╠═e28f72c0-7df2-4029-ab2a-4f21f2bade62
-# ╠═cbd246ac-cbc8-4301-b224-87e92f7912b5
-# ╠═89408ad5-0f4f-4bf9-bfaf-5ef3fdf1791d
-# ╠═342f30ae-5a57-4330-8a18-8a9b1eabd74f
-# ╠═d8d43e4b-a976-4535-a3f0-c2230fd55631
-# ╠═21a2c22e-99a7-46b5-b898-22028948e114
-# ╟─2c97d2eb-070c-499f-8bbc-9f650953ccd1
-# ╠═61500b9e-061e-4412-9fa7-9931ad27bee4
-# ╟─107838fd-dc24-4b35-bc0f-531cfc6362f2
-# ╠═242302eb-fe7e-4c20-83a2-f5a976fbbac9
-# ╟─93902fe2-5fcd-4f16-8384-9768002d9ee1
-# ╠═28406b28-a701-4b46-8620-5df4a5dc70ae
-# ╠═44d9e415-a7ac-431c-a72e-0d4392b2e629
-# ╠═8776d0cc-f9fb-43ee-babe-b77ec4f189ce
-# ╟─1a7f4f86-3dc5-4bd3-a25a-4a8f6a96e14e
-# ╟─1e0bd7c3-ec63-452e-9849-1f9579017f9c
-# ╟─0ae7e576-5c31-4ec7-bd4e-6df4b41c7c4f
-# ╟─fcd29939-01e8-42ae-8fef-f70ca60eebef
-# ╟─9c67720a-bb46-4b57-9a88-898147c0f77e
-# ╟─4bf427a3-a066-4abd-8be0-623e9d0aadf8
-# ╟─7f52e3e0-5691-4093-a9dc-af84bdd368fc
+# ╟─28aa1bc2-c49b-4461-a722-a5c8a1178869
+# ╠═ef4119ee-32c1-4ea3-990b-c459d5ca9870
+# ╟─b31e35d1-6244-4ebd-96c2-f3793e592650
+# ╟─eacadd1d-de8c-4c1b-81c1-711feb891e6a
+# ╟─b0d6933b-a5ca-4b0e-8df4-31c56655ef3d
+# ╠═da263111-4d1d-431b-884c-a17c4d6fff56
+# ╟─6c0604ef-6b8a-49bc-92f4-61ed1cd34dc1
+# ╠═7d1874b1-0155-4d42-81b9-679a306ba5dc
+# ╟─37cdba37-88be-4f7e-b7eb-68a510b70f7e
+# ╠═283ca636-4a53-47df-972d-ceb569ae24e1
+# ╟─7c8d402a-379e-4c25-bfd2-4db652b48def
+# ╠═7d46d7f6-d2ad-4302-9c94-277287413e16
+# ╟─b9699d8b-f315-443e-a4da-d3440df472c5
+# ╠═a5234f9a-ab19-44e4-a2d6-170f96c68b7d
+# ╟─ae810478-960e-4a42-b34b-ed5b4dd37fca
+# ╠═a9bd8c9c-e3b5-429c-b369-05c6c470e227
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
